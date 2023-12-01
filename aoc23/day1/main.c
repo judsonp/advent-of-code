@@ -23,9 +23,7 @@ const static struct word kDigitWords[] = {
 
 int word_digit(uint64_t buf) {
     for (int d = 0; d < kNumDigitWords; d++) {
-        int bits_of_word = kDigitWords[d].len * 8;
-        uint64_t mask = (1ULL << bits_of_word) - 1;
-        if (kDigitWords[d].word == (buf & mask)) {
+        if (kDigitWords[d].word == (buf & ((1ULL << (kDigitWords[d].len * 8)) - 1))) {
             return d + 1;
         }
     }
