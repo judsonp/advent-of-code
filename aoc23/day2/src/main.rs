@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::fs;
 use nom;
 use nom::branch::alt;
@@ -9,7 +10,7 @@ use nom::multi::separated_list0;
 use nom::sequence::{pair, separated_pair, terminated, tuple};
 use enum_map::{enum_map, Enum, EnumMap};
 
-#[derive(Debug, PartialEq, Enum)]
+#[derive(Debug, PartialEq, Enum, Copy, Clone)]
 enum Color {
     Red,
     Green,
@@ -25,6 +26,12 @@ impl Draw {
     fn contains(&self, other: &Draw) -> bool {
         self.draw.iter()
             .all(|(c, n)| other.draw[c] <= *n)
+    }
+
+    fn superset(&self, other: &Draw) -> Draw {
+        Draw {
+            draw: EnumMap::from_fn(|c| max(self.draw[c], other.draw[c]))
+        }
     }
 }
 
@@ -42,18 +49,32 @@ struct Input {
 fn main() {
     let input_s = fs::read_to_string("input.txt").unwrap();
     let (_, input) = parse_input(&input_s).unwrap();
-    println!("{}", part_one(input));
+    println!("Part 1: {}", part_one(&input));
+    println!("Part 2: {}", part_two(&input));
 }
 
-fn part_one(input: Input) -> u32 {
-    let ref_contents = Draw { draw: enum_map! {
+fn part_one(input: &Input) -> u32 {
+    let ref_contents = Draw {
+        draw: enum_map! {
         Color::Red => 12,
         Color::Green => 13,
         Color::Blue => 14,
-    } };
+    }
+    };
     input.games.iter()
         .filter(|g| g.draws.iter().all(|d| ref_contents.contains(d)))
         .map(|g| g.id)
+        .sum()
+}
+
+fn part_two(input: &Input) -> u32 {
+    input.games.iter()
+        .map(|g| {
+            g.draws.iter().fold(
+                Draw { draw: enum_map! {_ => 0} },
+                |acc, e| acc.superset(e))
+        })
+        .map(|d| d.draw.values().product::<u32>())
         .sum()
 }
 
@@ -103,27 +124,27 @@ mod tests {
     #[test]
     fn parse_draw() {
         assert_eq!(draw("3 green"),
-                   Ok(("", Draw { draw: enum_map!{ Color::Green => 3, _ => 0 } })))
+                   Ok(("", Draw { draw: enum_map! { Color::Green => 3, _ => 0 } })))
     }
 
     #[test]
     fn parse_draw_multi() {
         assert_eq!(draw("3 green, 1 blue"),
-                   Ok(("", Draw { draw: enum_map!{ Color::Green => 3, Color::Blue => 1, _ => 0 } })))
+                   Ok(("", Draw { draw: enum_map! { Color::Green => 3, Color::Blue => 1, _ => 0 } })))
     }
 
     #[test]
     fn parse_draws() {
         assert_eq!(draws("3 green; 1 red"),
-                   Ok(("", vec![Draw { draw: enum_map!{Color::Green => 3, _ => 0}},
-                                Draw { draw: enum_map!{Color::Red => 1, _ => 0}}])))
+                   Ok(("", vec![Draw { draw: enum_map! {Color::Green => 3, _ => 0} },
+                                Draw { draw: enum_map! {Color::Red => 1, _ => 0} }])))
     }
 
     #[test]
     fn parse_draws_multi() {
         assert_eq!(draws("3 green, 1 blue; 1 red, 2 green"),
-                   Ok(("", vec![Draw { draw: enum_map!{Color::Green => 3, Color::Blue => 1, _ => 0}},
-                                Draw { draw: enum_map!{Color::Red => 1, Color::Green => 2, _ => 0}}])))
+                   Ok(("", vec![Draw { draw: enum_map! {Color::Green => 3, Color::Blue => 1, _ => 0} },
+                                Draw { draw: enum_map! {Color::Red => 1, Color::Green => 2, _ => 0} }])))
     }
 
     #[test]
@@ -148,9 +169,16 @@ mod tests {
     }
 
     #[test]
-    fn example() {
+    fn example_part_one() {
         let s = fs::read_to_string("example.txt").unwrap();
         let (_, i) = parse_input(&s).unwrap();
-        assert_eq!(part_one(i), 8);
+        assert_eq!(part_one(&i), 8);
+    }
+
+    #[test]
+    fn example_part_two() {
+        let s = fs::read_to_string("example.txt").unwrap();
+        let (_, i) = parse_input(&s).unwrap();
+        assert_eq!(part_two(&i), 2286);
     }
 }
