@@ -21,8 +21,9 @@ impl Span {
         ul.x <= p.x && p.x <= br.x && ul.y <= p.y && p.y <= br.y
     }
 
-    fn within_symbols(&self, ps: &Vec<Symbol>) -> bool {
-        ps.iter().any(|s| self.within_point(&s.loc))
+    fn within_symbols<'a, I>(&self, ps: I) -> bool
+    where I: IntoIterator<Item=&'a Symbol> {
+        ps.into_iter().any(|s| self.within_point(&s.loc))
     }
 }
 
@@ -67,7 +68,7 @@ fn main() {
 
 fn part_one(numbers: &Vec<Number>, symbols: &Vec<Symbol>) -> u64 {
     numbers.iter()
-        .filter(|n| n.loc.within_symbols(&symbols))
+        .filter(|n| n.loc.within_symbols(symbols))
         .map(|n| n.n)
         .sum()
 }
