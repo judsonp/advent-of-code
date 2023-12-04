@@ -6,6 +6,7 @@ use nom::IResult;
 use nom::multi::{separated_list0, separated_list1};
 use nom::sequence::{delimited, terminated, tuple};
 
+#[derive(Debug)]
 struct Card {
     id: u32,
     winning: Vec<u32>,
@@ -20,17 +21,37 @@ fn main() {
     let input_s = fs::read_to_string("input.txt").unwrap();
     let (_, input) = parse_input(&input_s).unwrap();
     println!("Part 1: {}", part_one(&input));
-    // println!("Part 2: {}", part_two(&input));
+    println!("Part 2: {}", part_two(&input));
 }
 
 fn part_one(input: &Input) -> u32 {
     input.cards.iter()
-        .map(|c| {
-            let count = c.have.iter().filter(|n| c.winning.contains(n))
-                .count();
-            if count > 0 { 1 << (count - 1) } else { 0 }
-        })
+        .map(|c| card_score(c))
         .sum()
+}
+
+fn part_two(input: &Input) -> u32 {
+    let mut total_cards: u32 = 0;
+    let mut pending_copies: Vec<u32> = Vec::new();
+
+    for card in &input.cards {
+        let copies = 1 + pending_copies.len() as u32;
+        let matches = card.have.iter().filter(|n| card.winning.contains(n)).count();
+        for v in &mut pending_copies {
+            *v -= 1;
+        }
+        pending_copies.retain(|x| *x > 0);
+        if matches > 0 {
+            pending_copies.append(&mut vec![matches as u32; copies as usize]);
+        }
+        total_cards += copies;
+    }
+    return total_cards;
+}
+
+fn card_score(card: &Card) -> u32 {
+    let count = card.have.iter().filter(|n| card.winning.contains(n)).count();
+    if count > 0 { 1 << (count - 1) } else { 0 }
 }
 
 fn parse_input(input: &str) -> IResult<&str, Input> {
@@ -77,9 +98,16 @@ mod tests {
     }
 
     #[test]
-    fn example() {
+    fn example_part_one() {
         let s = fs::read_to_string("example.txt").unwrap();
         let (_, i) = parse_input(&s).unwrap();
         assert_eq!(part_one(&i), 13);
+    }
+
+    #[test]
+    fn example_part_two() {
+        let s = fs::read_to_string("example.txt").unwrap();
+        let (_, i) = parse_input(&s).unwrap();
+        assert_eq!(part_two(&i), 30);
     }
 }
