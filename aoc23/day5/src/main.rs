@@ -5,7 +5,7 @@ use nom::bytes::complete::{is_not, tag};
 use nom::character::complete::{i64 as nom64, multispace1, space1, space0, line_ending, multispace0};
 use nom::combinator::map;
 use nom::IResult;
-use nom::multi::separated_list1;
+use nom::multi::{many1, separated_list1};
 use nom::sequence::{delimited, tuple};
 use rangemap::{RangeMap, RangeSet};
 
@@ -34,25 +34,12 @@ impl ElfMap {
 struct Input {
     seeds: Vec<i64>,
     seed_ranges: RangeSet<i64>,
-    seed_to_soil: ElfMap,
-    soil_to_fert: ElfMap,
-    fert_to_water: ElfMap,
-    water_to_light: ElfMap,
-    light_to_temp: ElfMap,
-    temp_to_humid: ElfMap,
-    humid_to_loc: ElfMap,
+    maps: Vec<ElfMap>,
 }
 
 impl Input {
     fn seed_to_loc(&self, seed: i64) -> i64 {
-        let soil = self.seed_to_soil.map(seed);
-        let fert = self.soil_to_fert.map(soil);
-        let water = self.fert_to_water.map(fert);
-        let light = self.water_to_light.map(water);
-        let temp = self.light_to_temp.map(light);
-        let humid = self.temp_to_humid.map(temp);
-        let loc = self.humid_to_loc.map(humid);
-        return loc;
+        self.maps.iter().fold(seed, |v, m| m.map(v))
     }
 }
 
@@ -70,14 +57,13 @@ fn part_one(input: &Input) -> i64 {
 }
 
 fn part_two(input: &Input) -> i64 {
-    let soils = map_ranges(&input.seed_ranges, &input.seed_to_soil.data);
-    let ferts = map_ranges(&soils, &input.soil_to_fert.data);
-    let waters = map_ranges(&ferts, &input.fert_to_water.data);
-    let lights = map_ranges(&waters, &input.water_to_light.data);
-    let temps = map_ranges(&lights, &input.light_to_temp.data);
-    let humids = map_ranges(&temps, &input.temp_to_humid.data);
-    let locs = map_ranges(&humids, &input.humid_to_loc.data);
-    locs.iter().map(|r| r.start).min().unwrap()
+    input.maps.iter()
+        .fold(input.seed_ranges.clone(),
+              |r, m| map_ranges(&r, &m.data))
+        .iter()
+        .map(|r| r.start)
+        .min()
+        .unwrap()
 }
 
 fn range_intersect(a: &Range<i64>, b: &Range<i64>) -> Range<i64> {
@@ -100,9 +86,9 @@ fn map_ranges(ranges: &RangeSet<i64>, mapping: &RangeMap<i64, i64>) -> RangeSet<
 }
 
 fn parse_input(input: &str) -> IResult<&str, Input> {
-    map(tuple((seedlist, elfmap, elfmap, elfmap, elfmap, elfmap, elfmap, elfmap)),
-        |(seeds, seed_to_soil, soil_to_fert, fert_to_water, water_to_light, light_to_temp, temp_to_humid, humid_to_loc)|
-            Input { seed_ranges: seed_input_to_ranges(&seeds), seeds, seed_to_soil, soil_to_fert, fert_to_water, water_to_light, light_to_temp, temp_to_humid, humid_to_loc })
+    map(tuple((seedlist, many1(elfmap))),
+        |(seeds, maps)|
+            Input { seed_ranges: seed_input_to_ranges(&seeds), seeds, maps })
         (input)
 }
 
