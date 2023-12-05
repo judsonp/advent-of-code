@@ -6,9 +6,7 @@ use nom::IResult;
 use nom::multi::{separated_list0, separated_list1};
 use nom::sequence::{delimited, terminated, tuple};
 
-#[derive(Debug)]
 struct Card {
-    id: u32,
     winning: Vec<u32>,
     have: Vec<u32>,
 }
@@ -32,20 +30,17 @@ fn part_one(input: &Input) -> u32 {
 
 fn part_two(input: &Input) -> u32 {
     let mut total_cards: u32 = 0;
-    let mut pending_copies: Vec<u32> = Vec::new();
+    let mut copies = vec![1; input.cards.len()];
 
-    for card in &input.cards {
-        let copies = 1 + pending_copies.len() as u32;
+    for (i, card) in input.cards.iter().enumerate() {
         let matches = card.have.iter().filter(|n| card.winning.contains(n)).count();
-        for v in &mut pending_copies {
-            *v -= 1;
+        let this_copies = copies[i];
+        for v in &mut copies[i+1..i+1+matches] {
+            *v += this_copies;
         }
-        pending_copies.retain(|x| *x > 0);
-        if matches > 0 {
-            pending_copies.append(&mut vec![matches as u32; copies as usize]);
-        }
-        total_cards += copies;
+        total_cards += this_copies;
     }
+
     return total_cards;
 }
 
@@ -61,7 +56,7 @@ fn parse_input(input: &str) -> IResult<&str, Input> {
 
 fn card(input: &str) -> IResult<&str, Card> {
     map(tuple((header, numberlist, delimited(space0, tag("|"), space0), numberlist)),
-        |(id, winning, _, have)| Card { id, winning, have })(input)
+        |(_, winning, _, have)| Card { winning, have })(input)
 }
 
 fn header(input: &str) -> IResult<&str, u32> {
