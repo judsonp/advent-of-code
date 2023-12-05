@@ -1,3 +1,10 @@
+def part_one(lines):
+    cards = [map(lambda x: x.strip().split(), line.split(":")[1].split("|")) for line in lines]
+    scores = map(lambda x: 2 ** (x - 1) if x > 0 else 0,
+                 [sum(map(lambda x: 1, (filter(lambda x: x in winning, have)))) for winning, have in cards])
+    return sum(scores)
+
+
 def part_two(lines):
     cards = [map(lambda x: x.strip().split(), line.split(":")[1].split("|")) for line in lines]
     scores = [sum(map(lambda x: 1, (filter(lambda x: x in winning, have)))) for winning, have in cards]
@@ -9,4 +16,6 @@ def part_two(lines):
 
 
 with open("input.txt") as file:
-    print(part_two(file.readlines()))
+    input = file.readlines()
+    print(f"Part one: {part_one(input)}")
+    print(f"Part two: {part_two(input)}")
