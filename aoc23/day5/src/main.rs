@@ -25,8 +25,27 @@ impl From<Vec<(i64, i64, i64)>> for ElfMap {
 }
 
 impl ElfMap {
-    fn map(&self, input: i64) -> i64 {
+    fn map_value(&self, input: i64) -> i64 {
         input + self.data.get(&input).unwrap_or(&0)
+    }
+
+    fn map_values(&self, values: &Vec<i64>) -> Vec<i64> {
+        values.iter().map(|v| self.map_value(*v)).collect()
+    }
+
+    fn map_ranges(&self, ranges: &RangeSet<i64>) -> RangeSet<i64> {
+        let mut sharded_ranges: RangeSet<i64> = RangeSet::new();
+        for src_range in ranges.iter() {
+            for (dst_range, offset) in self.data.overlapping(src_range) {
+                let intersecting_range = range_intersect(src_range, dst_range);
+                let final_range = intersecting_range.start+offset..intersecting_range.end+offset;
+                sharded_ranges.insert(final_range);
+            }
+            for dst_range in self.data.gaps(src_range) {
+                sharded_ranges.insert(range_intersect(src_range, &dst_range));
+            }
+        }
+        return sharded_ranges
     }
 }
 
@@ -39,7 +58,7 @@ struct Input {
 
 impl Input {
     fn seed_to_loc(&self, seed: i64) -> i64 {
-        self.maps.iter().fold(seed, |v, m| m.map(v))
+        self.maps.iter().fold(seed, |v, m| m.map_value(v))
     }
 }
 
@@ -51,15 +70,18 @@ fn main() {
 }
 
 fn part_one(input: &Input) -> i64 {
-    input.seeds.iter()
-        .map(|seed| input.seed_to_loc(*seed))
-        .min().unwrap()
+    input.maps.iter()
+        .fold(input.seeds.clone(),
+        |s, m| m.map_values(&s))
+        .iter()
+        .min()
+        .unwrap().clone()
 }
 
 fn part_two(input: &Input) -> i64 {
     input.maps.iter()
         .fold(input.seed_ranges.clone(),
-              |r, m| map_ranges(&r, &m.data))
+              |r, m| m.map_ranges(&r))
         .iter()
         .map(|r| r.start)
         .min()
@@ -68,21 +90,6 @@ fn part_two(input: &Input) -> i64 {
 
 fn range_intersect(a: &Range<i64>, b: &Range<i64>) -> Range<i64> {
     max(a.start, b.start)..min(a.end, b.end)
-}
-
-fn map_ranges(ranges: &RangeSet<i64>, mapping: &RangeMap<i64, i64>) -> RangeSet<i64> {
-    let mut sharded_ranges: RangeSet<i64> = RangeSet::new();
-    for src_range in ranges.iter() {
-        for (dst_range, offset) in mapping.overlapping(src_range) {
-            let intersecting_range = range_intersect(src_range, dst_range);
-            let final_range = intersecting_range.start+offset..intersecting_range.end+offset;
-            sharded_ranges.insert(final_range);
-        }
-        for dst_range in mapping.gaps(src_range) {
-            sharded_ranges.insert(range_intersect(src_range, &dst_range));
-        }
-    }
-    return sharded_ranges
 }
 
 fn parse_input(input: &str) -> IResult<&str, Input> {
