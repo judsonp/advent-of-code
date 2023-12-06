@@ -1,7 +1,7 @@
 use std::cmp::{max, min};
 use std::fs;
 use std::iter::zip;
-use nom::bytes::complete::tag;
+use nom::bytes::complete::{is_not, tag};
 use nom::character::complete::{i64 as nom64, line_ending, space0, space1};
 use nom::IResult;
 use nom::multi::separated_list0;
@@ -15,11 +15,17 @@ struct Race {
 fn main() {
     let input_s = fs::read_to_string("input.txt").unwrap();
     let (_, input) = parse_input(&input_s).unwrap();
+    let (_, input2) = parse_input_2(&input_s).unwrap();
     println!("Part one: {}", part_one(&input));
+    println!("Part two: {}", part_two(&input2));
 }
 
 fn part_one(input: &Vec<Race>) -> i64 {
     input.iter().map(|r| ways_to_beat(r)).product()
+}
+
+fn part_two(race: &Race) -> i64 {
+    ways_to_beat(race)
 }
 
 fn ways_to_beat(race: &Race) -> i64 {
@@ -39,4 +45,14 @@ fn parse_input(text: &str) -> IResult<&str, Vec<Race>> {
     let (text, distances) = delimited(pair(tag("Distance:"), space0), separated_list0(space1, nom64), line_ending)(text)?;
     let races = zip(times, distances).map(|(t, d)| Race { duration: t, distance_to_beat: d }).collect();
     return Ok((text, races))
+}
+
+fn parse_input_2(text: &str) -> IResult<&str, Race> {
+    let (text, timestring) = delimited(pair(tag("Time:"), space0), is_not("\n"), line_ending)(text)?;
+    let (text, diststring) = delimited(pair(tag("Distance:"), space0), is_not("\n"), line_ending)(text)?;
+
+    let time = str::replace(timestring, " ", "").parse::<i64>().unwrap();
+    let dist = str::replace(diststring, " ", "").parse::<i64>().unwrap();
+
+    return Ok((text, Race { duration: time, distance_to_beat: dist }))
 }
