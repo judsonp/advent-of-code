@@ -10,7 +10,7 @@ fn card_value(value: char) -> Result<u8> {
             'A' => 14,
             'K' => 13,
             'Q' => 12,
-            'J' => 11,
+            'J' => 0,
             'T' => 10,
             _ => value.to_digit(10)
                 .ok_or_else(|| anyhow!("Invalid card identifier: {}", value))? as u8,
@@ -41,10 +41,25 @@ struct EvaluatedHand<'a> {
 
 impl EvaluatedHand<'_> {
     fn evaluate(hand: &Hand) -> EvaluatedHand {
-        let value_counts: Counter<u8> = hand.hand.iter().cloned().collect();
+        // map of card value to number of that card
+        let card_counts: Counter<u8> = hand.hand.iter().cloned().collect();
+
+        // counts[i] is the number of different card values that we have i of
+        // for example, two pair has counts[2] == 2 and counts[1] == 1
         let mut counts = [0; 5];
-        for (_, &count) in value_counts.iter() {
+        for (_, &count) in card_counts.iter().filter(|(v, _)| **v != 0u8) {
             counts[5 - count] += 1;
+        }
+
+        // Make all jokers contribute to whatever card we have the most of.
+        if let Some(&jokers) = card_counts.get(&0u8) {
+            if let Some(highest_ct) = card_counts.iter()
+                .filter(|(v, _)| **v != 0u8).map(|(_, c)| c).max() {
+                counts[5 - *highest_ct] -= 1;
+                counts[5 - (*highest_ct + jokers)] += 1;
+            } else {
+                counts[0] = 1;
+            }
         }
 
         EvaluatedHand {
@@ -78,10 +93,10 @@ impl Ord for EvaluatedHand<'_> {
 fn main() {
     let input_s = fs::read_to_string("input.txt").unwrap();
     let input = parse_input(&input_s).unwrap();
-    println!("Part one: {}", part_one(input));
+    println!("Part two: {}", part_two(input));
 }
 
-fn part_one(input: Vec<Hand>) -> i64 {
+fn part_two(input: Vec<Hand>) -> i64 {
     let mut hands: Vec<EvaluatedHand> =
         input.iter().map(|h| EvaluatedHand::evaluate(h)).collect();
     hands.sort();
