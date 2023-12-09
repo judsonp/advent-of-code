@@ -7,10 +7,15 @@ fn main() {
     let input_s = fs::read_to_string("input.txt").unwrap();
     let (_, input) = parse_input(&input_s).unwrap();
     println!("Part one: {}", part_one(&input));
+    println!("Part two: {}", part_two(&input));
 }
 
 fn part_one(input: &Vec<Vec<i64>>) -> i64 {
     input.iter().map(prediction).sum()
+}
+
+fn part_two(input: &Vec<Vec<i64>>) -> i64 {
+    input.iter().map(prediction2).sum()
 }
 
 fn prediction(input: &Vec<i64>) -> i64 {
@@ -27,6 +32,26 @@ fn prediction(input: &Vec<i64>) -> i64 {
         }
         seq.pop();
         result += seq.last().unwrap();
+    }
+    return result;
+}
+
+fn prediction2(input: &Vec<i64>) -> i64 {
+    let mut seq = input.clone();
+    let mut result: i64 = *seq.first().unwrap();
+    let mut sign = -1;
+    let mut all_zero: bool = false;
+    while !all_zero {
+        all_zero = true;
+        for idx in 1..seq.len() {
+            seq[idx - 1] = seq[idx] - seq[idx - 1];
+            if seq[idx - 1] != 0 {
+                all_zero = false;
+            }
+        }
+        seq.pop();
+        result += seq.first().unwrap() * sign;
+        sign *= -1;
     }
     return result;
 }
