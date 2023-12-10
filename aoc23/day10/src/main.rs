@@ -23,11 +23,8 @@ fn main() {
 
 fn part_one(input: &Graph) -> u32 {
     let start = input.start;
-    let mut steps: u32 = 0;
-    let mut cur = start;
-
-    steps += 1;
-    cur = input.graph.get(&start).unwrap()[0];
+    let mut steps: u32 = 1;
+    let mut cur = input.graph.get(&start).unwrap()[0];
     let mut last = start;
 
     while cur != start {
@@ -37,7 +34,7 @@ fn part_one(input: &Graph) -> u32 {
         cur = *next;
         steps += 1;
     }
-    println!("Loop size: {}", steps);
+
     return steps / 2;
 }
 
@@ -121,11 +118,9 @@ fn parse_input(input: &str) -> Graph {
 
     let start = start.unwrap();
     let connected_to_start: [Point; 2] = graph.iter()
-        .filter(|(loc, conns)| conns[0] == start || conns[1] == start)
-        .map(|(loc, conns)| *loc)
+        .filter(|(_, conns)| conns[0] == start || conns[1] == start)
+        .map(|(loc, _)| *loc)
         .collect::<Vec<_>>().try_into().unwrap();
-    println!("Start: {:?}", start);
-    println!("Connected to start: {:?}", connected_to_start);
     graph.insert(start, connected_to_start);
 
     return Graph { graph, start };
