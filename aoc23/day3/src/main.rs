@@ -41,7 +41,7 @@ fn main() {
     let number_re = Regex::new("\\d+").unwrap();
     let symbol_re = Regex::new("[^\\d.]").unwrap();
 
-    let input = fs::read_to_string("input.txt").unwrap();
+    let input = fs::read_to_string("inputs/day3.txt").unwrap();
 
     let numbers: Vec<Number> = input.split("\n").enumerate()
         .flat_map(|(line_nr, line)| number_re.find_iter(line).map(move |m| (line_nr, m)))

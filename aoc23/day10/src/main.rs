@@ -15,7 +15,7 @@ struct Graph {
 }
 
 fn main() {
-    let input_s = fs::read_to_string("input.txt").unwrap();
+    let input_s = fs::read_to_string("inputs/day10.txt").unwrap();
     let input = parse_input(&input_s);
     println!("Part one: {}", part_one(&input));
     println!("Part two: {}", part_two(&input));

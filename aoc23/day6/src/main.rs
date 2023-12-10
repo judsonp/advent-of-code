@@ -13,7 +13,7 @@ struct Race {
 }
 
 fn main() {
-    let input_s = fs::read_to_string("input.txt").unwrap();
+    let input_s = fs::read_to_string("inputs/day6.txt").unwrap();
     let (_, input) = parse_input(&input_s).unwrap();
     let (_, input2) = parse_input_2(&input_s).unwrap();
     println!("Part one: {}", part_one(&input));

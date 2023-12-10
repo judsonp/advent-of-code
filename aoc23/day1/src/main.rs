@@ -55,6 +55,6 @@ fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 }
 
 fn main() {
-    let lines = read_lines("input.txt").unwrap();
+    let lines = read_lines("inputs/day1.txt").unwrap();
     println!("{}", part_two(lines));
 }

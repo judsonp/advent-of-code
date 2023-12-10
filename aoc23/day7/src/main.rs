@@ -91,7 +91,7 @@ impl Ord for EvaluatedHand<'_> {
 }
 
 fn main() {
-    let input_s = fs::read_to_string("input.txt").unwrap();
+    let input_s = fs::read_to_string("inputs/day7.txt").unwrap();
     let input = parse_input(&input_s).unwrap();
     println!("Part two: {}", part_two(input));
 }

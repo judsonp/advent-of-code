@@ -63,7 +63,7 @@ impl Input {
 }
 
 fn main() {
-    let input_s = fs::read_to_string("input.txt").unwrap();
+    let input_s = fs::read_to_string("inputs/day5.txt").unwrap();
     let (_, input) = parse_input(&input_s).unwrap();
     println!("Part 1: {}", part_one(&input));
     println!("Part 2: {}", part_two(&input));
