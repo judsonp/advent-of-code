@@ -38,10 +38,16 @@ struct Symbol {
 }
 
 fn main() {
+    let input = fs::read_to_string("inputs/day3.txt").unwrap();
+    let (numbers, symbols) = parse_input(&input);
+
+    println!("Part 1: {}", part_one(&numbers, &symbols));
+    println!("Part 2: {}", part_two(&numbers, &symbols));
+}
+
+fn parse_input(input: &str) -> (Vec<Number>, Vec<Symbol>) {
     let number_re = Regex::new("\\d+").unwrap();
     let symbol_re = Regex::new("[^\\d.]").unwrap();
-
-    let input = fs::read_to_string("inputs/day3.txt").unwrap();
 
     let numbers: Vec<Number> = input.split("\n").enumerate()
         .flat_map(|(line_nr, line)| number_re.find_iter(line).map(move |m| (line_nr, m)))
@@ -62,8 +68,7 @@ fn main() {
         })
         .collect();
 
-    println!("Part 1: {}", part_one(&numbers, &symbols));
-    println!("Part 2: {}", part_two(&numbers, &symbols));
+    return (numbers, symbols);
 }
 
 fn part_one(numbers: &Vec<Number>, symbols: &Vec<Symbol>) -> u64 {
