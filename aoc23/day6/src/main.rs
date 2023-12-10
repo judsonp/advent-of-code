@@ -5,7 +5,7 @@ use nom::bytes::complete::{is_not, tag};
 use nom::character::complete::{i64 as nom64, line_ending, space0, space1};
 use nom::IResult;
 use nom::multi::separated_list0;
-use nom::sequence::{delimited, pair, preceded};
+use nom::sequence::{delimited, pair};
 
 struct Race {
     duration: i64,

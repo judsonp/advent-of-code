@@ -2,9 +2,7 @@
 extern crate lazy_static;
 
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::Path;
+use std::fs;
 use num2words::{Num2Words, Lang};
 
 lazy_static! {
@@ -37,24 +35,19 @@ fn value_one(line: &str) -> u32 {
     first.unwrap() * 10 + last.unwrap()
 }
 
-fn part_two(lines: io::Lines<io::BufReader<File>>) -> u32 {
-    lines.map(|line| value_two(&line.unwrap()))
+fn part_two(lines: &Vec<&str>) -> u32 {
+    lines.iter().map(|line| value_two(line))
         .sum()
 }
 
-fn part_one(lines: io::Lines<io::BufReader<File>>) -> u32 {
-    lines.map(|line| value_one(&line.unwrap()))
+fn part_one(lines: &Vec<&str>) -> u32 {
+    lines.iter().map(|line| value_one(line))
         .sum()
-}
-
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-    where P: AsRef<Path>
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
 }
 
 fn main() {
-    let lines = read_lines("inputs/day1.txt").unwrap();
-    println!("{}", part_two(lines));
+    let input = fs::read_to_string("inputs/day1.txt").unwrap();
+    let lines = input.split("\n").filter(|s| !s.is_empty()).collect::<Vec<_>>();
+    println!("Part one: {}", part_one(&lines));
+    println!("Part two: {}", part_two(&lines));
 }

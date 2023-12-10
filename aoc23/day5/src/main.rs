@@ -56,12 +56,6 @@ struct Input {
     maps: Vec<ElfMap>,
 }
 
-impl Input {
-    fn seed_to_loc(&self, seed: i64) -> i64 {
-        self.maps.iter().fold(seed, |v, m| m.map_value(v))
-    }
-}
-
 fn main() {
     let input_s = fs::read_to_string("inputs/day5.txt").unwrap();
     let (_, input) = parse_input(&input_s).unwrap();
