@@ -1,0 +1,8 @@
+[package]
+name = "aoc23_11"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+derive_more = "0.99.17"
+itertools = "0.12.0"
