@@ -54,6 +54,14 @@ name = "aoc23_13"
 version = "0.1.0"
 
 [[package]]
+name = "aoc23_14"
+version = "0.1.0"
+dependencies = [
+ "grid",
+ "itertools",
+]
+
+[[package]]
 name = "aoc23_15"
 version = "0.1.0"
 dependencies = [
