@@ -22,58 +22,38 @@ fn main() {
 
 fn part_one(input: &Vec<Field>) -> usize {
     input.iter()
-        .map(|field| field_score(field))
+        .map(|field| smudged_field_score(field, 0))
         .sum()
 }
 
 fn part_two(input: &Vec<Field>) -> usize {
     input.iter()
-        .map(|field| smudged_field_score(field))
+        .map(|field| smudged_field_score(field, 1))
         .sum()
 }
 
-fn field_score(field: &Field) -> usize {
-    if let Some(h) = find_reflect(&field.cols) {
+fn smudged_field_score(field: &Field, target: u32) -> usize {
+    if let Some(h) = find_smudged_reflect(&field.cols, target) {
         return h;
     }
-    if let Some(v) = find_reflect(&field.rows) {
+    if let Some(v) = find_smudged_reflect(&field.rows, target) {
         return 100 * v;
     }
     panic!("No reflection!");
 }
 
-fn smudged_field_score(field: &Field) -> usize {
-    if let Some(h) = find_smudged_reflect(&field.cols) {
-        return h;
-    }
-    if let Some(v) = find_smudged_reflect(&field.rows) {
-        return 100 * v;
-    }
-    panic!("No reflection!");
+fn find_smudged_reflect(elems: &Vec<u64>, target: u32) -> Option<usize> {
+    (1..elems.len()).filter(|idx| has_smudged_reflect(elems, *idx, target)).next()
 }
 
-fn find_reflect(elems: &Vec<u64>) -> Option<usize> {
-    (1..elems.len()).filter(|idx| has_reflect(elems, *idx)).next()
-}
-
-fn has_reflect(elems: &Vec<u64>, idx: usize) -> bool {
-    let left = (0..idx).rev();
-    let right = idx..elems.len();
-    left.zip(right).all(|(i1, i2)| elems[i1] == elems[i2])
-}
-
-fn find_smudged_reflect(elems: &Vec<u64>) -> Option<usize> {
-    (1..elems.len()).filter(|idx| has_smudged_reflect(elems, *idx)).next()
-}
-
-fn has_smudged_reflect(elems: &Vec<u64>, idx: usize) -> bool {
+fn has_smudged_reflect(elems: &Vec<u64>, idx: usize, target: u32) -> bool {
     let left = (0..idx).rev();
     let right = idx..elems.len();
     let diffcount = left.zip(right)
         .map(|(i1, i2)| elems[i1] ^ elems[i2])
         .map(|x| x.count_ones())
         .sum::<u32>();
-    return diffcount == 1;
+    return diffcount == target;
 }
 
 fn parse_input(input: &str) -> Vec<Field> {
