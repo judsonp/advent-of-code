@@ -3,6 +3,7 @@ use itertools::Itertools;
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::fs;
+use rayon::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 struct Point {
@@ -133,16 +134,26 @@ fn main() {
     let input_s = fs::read_to_string("inputs/day16.txt").unwrap();
     let input = parse_input(&input_s);
     println!("Part one: {}", part_one(&input));
+    println!("Part two: {}", part_two(&input));
 }
 
 fn part_one(ops: &Opgrid) -> usize {
-    let mut illum = Illumination::new(&ops);
-    illuminate(
-        &ops,
-        &mut illum,
-        Beam::new(Point::new(0, 0), Direction::Right),
-    );
+    return illumination_score(ops, Beam::new(Point::new(0, 0), Direction::Right));
+}
 
+fn part_two(ops: &Opgrid) -> usize {
+    let rights = (0..ops.grid.rows()).map(|r| Beam::new(Point::new(0, r), Direction::Right));
+    let downs = (0..ops.grid.cols()).map(|c| Beam::new(Point::new(c, 0), Direction::Down));
+    let lefts = (0..ops.grid.rows()).map(|r| Beam::new(Point::new(ops.grid.cols() - 1, r), Direction::Left));
+    let ups = (0..ops.grid.cols()).map(|c| Beam::new(Point::new(c, ops.grid.rows() - 1), Direction::Up));
+    let beams = rights.chain(downs).chain(lefts).chain(ups).collect_vec();
+
+    return beams.par_iter().map(|beam| illumination_score(ops, *beam)).max().unwrap();
+}
+
+fn illumination_score(ops: &Opgrid, beam: Beam) -> usize {
+    let mut illum = Illumination::new(&ops);
+    illuminate(&ops, &mut illum, beam);
     return illum.grid.iter().map(|x| if *x { 1 } else { 0 }).sum();
 }
 
@@ -293,5 +304,12 @@ mod tests {
         let input = "\\........-.........\\................................|...\n......-/.............|-.../.....|...........././..\\.....\n-.........................|.....\\...................|.\\.\n.......-........../.......\\.........|..../........-.-|..\n";
         let parsed = super::parse_input(input);
         assert_eq!(part_one(&parsed), 89);
+    }
+
+    #[test]
+    fn example_part2() {
+        let input_s = fs::read_to_string("../examples/day16.txt").unwrap();
+        let input = parse_input(&input_s);
+        assert_eq!(part_two(&input), 51);
     }
 }
