@@ -63,7 +63,7 @@ fn parse_input(input: &str) -> (Vec<Number>, Vec<Symbol>) {
     let symbol_re = Regex::new("[^\\d.]").unwrap();
 
     let numbers: Vec<Number> = input
-        .split("\n")
+        .split('\n')
         .enumerate()
         .flat_map(|(line_nr, line)| number_re.find_iter(line).map(move |m| (line_nr, m)))
         .map(|(line_nr, num_match)| Number {
@@ -82,7 +82,7 @@ fn parse_input(input: &str) -> (Vec<Number>, Vec<Symbol>) {
         .collect();
 
     let symbols: Vec<Symbol> = input
-        .split("\n")
+        .split('\n')
         .enumerate()
         .flat_map(|(line_nr, line)| symbol_re.find_iter(line).map(move |m| (line_nr, m)))
         .map(|(line_nr, sym_match)| Symbol {
@@ -94,10 +94,10 @@ fn parse_input(input: &str) -> (Vec<Number>, Vec<Symbol>) {
         })
         .collect();
 
-    return (numbers, symbols);
+    (numbers, symbols)
 }
 
-fn part_one(numbers: &Vec<Number>, symbols: &Vec<Symbol>) -> u64 {
+fn part_one(numbers: &[Number], symbols: &[Symbol]) -> u64 {
     numbers
         .iter()
         .filter(|n| n.loc.within_symbols(symbols))
@@ -105,7 +105,7 @@ fn part_one(numbers: &Vec<Number>, symbols: &Vec<Symbol>) -> u64 {
         .sum()
 }
 
-fn part_two(numbers: &Vec<Number>, symbols: &Vec<Symbol>) -> u64 {
+fn part_two(numbers: &[Number], symbols: &[Symbol]) -> u64 {
     symbols
         .iter()
         .filter(|s| s.is_gear)

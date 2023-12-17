@@ -102,13 +102,14 @@ struct Opgrid {
     grid: Grid<OpticalPart>,
 }
 
-impl Opgrid {
-    #[allow(dead_code)]
-    fn to_string(&self) -> String {
-        self.grid
+impl Display for Opgrid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let string = self
+            .grid
             .iter_rows()
             .map(|row| row.map(|item| item.to_string()).join(""))
-            .join("\n")
+            .join("\n");
+        write!(f, "{}", string)
     }
 }
 
@@ -116,15 +117,18 @@ struct Illumination {
     grid: Grid<bool>,
 }
 
-impl Illumination {
-    #[allow(dead_code)]
-    fn to_string(&self) -> String {
-        self.grid
+impl Display for Illumination {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let string = self
+            .grid
             .iter_rows()
             .map(|row| row.map(|x| if *x { "#" } else { "." }).join(""))
-            .join("\n")
+            .join("\n");
+        write!(f, "{}", string)
     }
+}
 
+impl Illumination {
     fn new(ops: &Opgrid) -> Self {
         Illumination {
             grid: Grid::init(ops.grid.rows(), ops.grid.cols(), false),
@@ -140,7 +144,7 @@ fn main() {
 }
 
 fn part_one(ops: &Opgrid) -> usize {
-    return illumination_score(ops, Beam::new(Point::new(0, 0), Direction::Right));
+    illumination_score(ops, Beam::new(Point::new(0, 0), Direction::Right))
 }
 
 fn part_two(ops: &Opgrid) -> usize {
@@ -160,8 +164,8 @@ fn part_two(ops: &Opgrid) -> usize {
 }
 
 fn illumination_score(ops: &Opgrid, beam: Beam) -> usize {
-    let mut illum = Illumination::new(&ops);
-    illuminate(&ops, &mut illum, beam);
+    let mut illum = Illumination::new(ops);
+    illuminate(ops, &mut illum, beam);
     return illum.grid.iter().map(|x| if *x { 1 } else { 0 }).sum();
 }
 
@@ -180,10 +184,8 @@ fn propagate_beam(ops: &Opgrid, illum: &mut Illumination, beam: Beam, visited: &
     visited.insert(beam);
 
     let propagated_beams = get_next_beams(ops, &beam);
-    for maybe_next_beam in propagated_beams.into_iter() {
-        if let Some(next_beam) = maybe_next_beam {
-            propagate_beam(ops, illum, next_beam, visited);
-        }
+    for next_beam in propagated_beams.into_iter().flatten() {
+        propagate_beam(ops, illum, next_beam, visited);
     }
 }
 
@@ -242,15 +244,15 @@ fn get_next_beams(ops: &Opgrid, beam: &Beam) -> [Option<Beam>; 2] {
 
 fn parse_input(input: &str) -> Opgrid {
     let input = input.trim();
-    let height = input.split("\n").count();
-    let width = input.split("\n").next().unwrap().len();
+    let height = input.split('\n').count();
+    let width = input.split('\n').next().unwrap().len();
     let mut grid = Grid::init(height, width, OpticalPart::Empty);
-    for (y, line) in input.split("\n").enumerate() {
+    for (y, line) in input.split('\n').enumerate() {
         for (x, symbol) in line.chars().enumerate() {
             *grid.get_mut(y, x).unwrap() = symbol.into();
         }
     }
-    return Opgrid { grid };
+    Opgrid { grid }
 }
 
 #[cfg(test)]

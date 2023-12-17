@@ -6,7 +6,7 @@ struct Field {
 }
 
 fn field_elem_set(elem: &mut u64, pos: usize) {
-    *elem = *elem | (0x1 << pos);
+    *elem |= 0x1 << pos;
 }
 
 fn main() {
@@ -16,14 +16,14 @@ fn main() {
     println!("Part two: {}", part_two(&input));
 }
 
-fn part_one(input: &Vec<Field>) -> usize {
+fn part_one(input: &[Field]) -> usize {
     input
         .iter()
         .map(|field| smudged_field_score(field, 0))
         .sum()
 }
 
-fn part_two(input: &Vec<Field>) -> usize {
+fn part_two(input: &[Field]) -> usize {
     input
         .iter()
         .map(|field| smudged_field_score(field, 1))
@@ -41,9 +41,7 @@ fn smudged_field_score(field: &Field, target: u32) -> usize {
 }
 
 fn find_smudged_reflect(elems: &Vec<u64>, target: u32) -> Option<usize> {
-    (1..elems.len())
-        .filter(|idx| has_smudged_reflect(elems, *idx, target))
-        .next()
+    (1..elems.len()).find(|idx| has_smudged_reflect(elems, *idx, target))
 }
 
 fn has_smudged_reflect(elems: &Vec<u64>, idx: usize, target: u32) -> bool {
@@ -54,20 +52,20 @@ fn has_smudged_reflect(elems: &Vec<u64>, idx: usize, target: u32) -> bool {
         .map(|(i1, i2)| elems[i1] ^ elems[i2])
         .map(|x| x.count_ones())
         .sum::<u32>();
-    return diffcount == target;
+    diffcount == target
 }
 
 fn parse_input(input: &str) -> Vec<Field> {
-    input.trim().split("\n\n").map(|s| parse_field(s)).collect()
+    input.trim().split("\n\n").map(parse_field).collect()
 }
 
 fn parse_field(input: &str) -> Field {
-    let row_count = input.trim().split("\n").count();
-    let col_count = input.trim().split("\n").next().unwrap().len();
+    let row_count = input.trim().split('\n').count();
+    let col_count = input.trim().split('\n').next().unwrap().len();
     let mut rows: Vec<u64> = vec![0; row_count];
     let mut cols: Vec<u64> = vec![0; col_count];
 
-    for (row, line) in input.trim().split("\n").enumerate() {
+    for (row, line) in input.trim().split('\n').enumerate() {
         for (col, symbol) in line.chars().enumerate() {
             if symbol == '#' {
                 field_elem_set(&mut rows[row], col);
@@ -76,7 +74,7 @@ fn parse_field(input: &str) -> Field {
         }
     }
 
-    return Field { rows, cols };
+    Field { rows, cols }
 }
 
 #[cfg(test)]

@@ -73,7 +73,7 @@ fn main() {
     println!("Part two: {}", part_two(&input));
 }
 
-fn part_one(input: &Vec<&str>) -> u64 {
+fn part_one(input: &[&str]) -> u64 {
     input.iter().map(|s| snow_hash(s) as u64).sum()
 }
 
@@ -109,19 +109,19 @@ fn part_two(input: &Vec<&str>) -> u64 {
 }
 
 fn parse_instr(instr: &str) -> Instruction {
-    if instr.ends_with("-") {
-        let label = instr.strip_suffix("-").unwrap().to_owned();
-        return Instruction::Delete { label };
+    if instr.ends_with('-') {
+        let label = instr.strip_suffix('-').unwrap().to_owned();
+        Instruction::Delete { label }
     } else {
-        let (label, value) = instr.split_once("=").unwrap();
+        let (label, value) = instr.split_once('=').unwrap();
         let label = label.to_owned();
         let value = value.parse::<u8>().unwrap();
-        return Instruction::Set { label, value };
+        Instruction::Set { label, value }
     }
 }
 
 fn snow_hash(string: &str) -> u8 {
-    string.chars().fold(0u8, |acc, c| hash_step(acc, c))
+    string.chars().fold(0u8, hash_step)
 }
 
 fn hash_step(init: u8, next: char) -> u8 {
@@ -136,9 +136,9 @@ fn hash_step(init: u8, next: char) -> u8 {
     state += next as u32;
     state *= 17;
     state %= 256;
-    return state as u8;
+    state as u8
 }
 
 fn parse_input(input: &str) -> Vec<&str> {
-    return input.trim().split(",").collect();
+    return input.trim().split(',').collect();
 }

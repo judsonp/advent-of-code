@@ -1,6 +1,6 @@
 use grid::Grid;
 use itertools::Itertools;
-use std::fs;
+use std::{fmt::Display, fs};
 
 #[derive(Eq, PartialEq, Clone, Copy)]
 enum Direction {
@@ -43,13 +43,14 @@ struct Rocks {
     rocks: Grid<RockState>,
 }
 
-impl Rocks {
-    #[allow(dead_code)]
-    fn to_string(&self) -> String {
-        self.rocks
+impl Display for Rocks {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let string = self
+            .rocks
             .iter_rows()
             .map(|row| row.map(|&item| -> char { item.into() }).join(""))
-            .join("\n")
+            .join("\n");
+        write!(f, "{}", string)
     }
 }
 
@@ -169,10 +170,10 @@ fn rocks_value(rocks: &Rocks) -> usize {
 }
 
 fn parse_input(input: &str) -> Rocks {
-    let rows = input.trim().split("\n").count();
-    let cols = input.trim().split("\n").next().unwrap().trim().len();
+    let rows = input.trim().split('\n').count();
+    let cols = input.trim().split('\n').next().unwrap().trim().len();
     let mut rocks = Grid::init(rows, cols, RockState::Empty);
-    for (row, line) in input.trim().split("\n").enumerate() {
+    for (row, line) in input.trim().split('\n').enumerate() {
         let line = line.trim();
         for (col, symbol) in line.chars().enumerate() {
             *rocks.get_mut(row, col).unwrap() = RockState::from(symbol);

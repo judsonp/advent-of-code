@@ -29,7 +29,7 @@ fn main() {
 fn parse_input(input: &str) -> HashSet<Galaxy> {
     let mut galaxies = HashSet::new();
     for (row, line) in input
-        .split("\n")
+        .split('\n')
         .filter(|line| !line.is_empty())
         .enumerate()
     {
@@ -39,7 +39,7 @@ fn parse_input(input: &str) -> HashSet<Galaxy> {
             }
         }
     }
-    return galaxies;
+    galaxies
 }
 
 fn part_one(input: &HashSet<Galaxy>) -> usize {
@@ -66,7 +66,7 @@ fn expanded_galaxy_pair_distances(input: &HashSet<Galaxy>, expansion_factor: usi
         let dist = expanded_taxicab_distance(a, b, &doubled_x, &doubled_y, expansion_factor);
         sum += dist;
     }
-    return sum;
+    sum
 }
 
 fn expanded_taxicab_distance(

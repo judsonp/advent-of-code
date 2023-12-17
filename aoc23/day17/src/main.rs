@@ -60,7 +60,7 @@ impl NodeId {
         }
     }
 
-    fn to_index(&self, _max_x: u16, max_y: u16, max_steps: u8) -> u32 {
+    fn to_index(self, _max_x: u16, max_y: u16, max_steps: u8) -> u32 {
         // note: max x/y is exclusive, max steps is inclusive
         // note: steps = 0 is not a supported state
         assert!(self.steps != 0);
@@ -69,7 +69,7 @@ impl NodeId {
         id = (id * max_y as u32) + self.y as u32;
         id = (id * max_steps as u32) + (self.steps as u32 - 1);
         id = (id * 4) + <Direction as Into<u32>>::into(self.direction);
-        return id;
+        id
     }
 
     fn from_index(id: u32, _max_x: u16, max_y: u16, max_steps: u8) -> Self {
@@ -149,7 +149,7 @@ fn main() {
 
 fn part_one(input: &Grid<u8>) -> u32 {
     let problem = Problem {
-        grid: &input,
+        grid: input,
         min_steps: 1,
         max_steps: 3,
     };
@@ -158,7 +158,7 @@ fn part_one(input: &Grid<u8>) -> u32 {
 
 fn part_two(input: &Grid<u8>) -> u32 {
     let problem = Problem {
-        grid: &input,
+        grid: input,
         min_steps: 4,
         max_steps: 10,
     };
@@ -234,15 +234,15 @@ fn crucible_walk(problem: &Problem) -> u32 {
 
 fn parse_input(input: &str) -> Grid<u8> {
     let input = input.trim();
-    let height = input.split("\n").count();
-    let width = input.split("\n").next().unwrap().len();
+    let height = input.split('\n').count();
+    let width = input.split('\n').next().unwrap().len();
     let mut grid = Grid::init(height, width, 0);
-    for (y, line) in input.split("\n").enumerate() {
+    for (y, line) in input.split('\n').enumerate() {
         for (x, value) in line.chars().enumerate() {
             *grid.get_mut(y, x).unwrap() = value.to_digit(10).unwrap() as u8;
         }
     }
-    return grid;
+    grid
 }
 
 fn all_dirsteps_iter(

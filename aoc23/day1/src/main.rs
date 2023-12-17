@@ -37,18 +37,18 @@ fn value_one(line: &str) -> u32 {
     first.unwrap() * 10 + last.unwrap()
 }
 
-fn part_two(lines: &Vec<&str>) -> u32 {
+fn part_two(lines: &[&str]) -> u32 {
     lines.iter().map(|line| value_two(line)).sum()
 }
 
-fn part_one(lines: &Vec<&str>) -> u32 {
+fn part_one(lines: &[&str]) -> u32 {
     lines.iter().map(|line| value_one(line)).sum()
 }
 
 fn main() {
     let input = fs::read_to_string("inputs/day1.txt").unwrap();
     let lines = input
-        .split("\n")
+        .split('\n')
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>();
     println!("Part one: {}", part_one(&lines));

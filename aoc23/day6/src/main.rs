@@ -20,8 +20,8 @@ fn main() {
     println!("Part two: {}", part_two(&input2));
 }
 
-fn part_one(input: &Vec<Race>) -> i64 {
-    input.iter().map(|r| ways_to_beat(r)).product()
+fn part_one(input: &[Race]) -> i64 {
+    input.iter().map(ways_to_beat).product()
 }
 
 fn part_two(race: &Race) -> i64 {
@@ -57,7 +57,7 @@ fn parse_input(text: &str) -> IResult<&str, Vec<Race>> {
             distance_to_beat: d,
         })
         .collect();
-    return Ok((text, races));
+    Ok((text, races))
 }
 
 fn parse_input_2(text: &str) -> IResult<&str, Race> {
@@ -69,11 +69,11 @@ fn parse_input_2(text: &str) -> IResult<&str, Race> {
     let time = str::replace(timestring, " ", "").parse::<i64>().unwrap();
     let dist = str::replace(diststring, " ", "").parse::<i64>().unwrap();
 
-    return Ok((
+    Ok((
         text,
         Race {
             duration: time,
             distance_to_beat: dist,
         },
-    ));
+    ))
 }

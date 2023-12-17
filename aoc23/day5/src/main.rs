@@ -22,7 +22,7 @@ impl From<Vec<(i64, i64, i64)>> for ElfMap {
         for (dest_start, src_start, range) in input {
             result.insert(src_start..src_start + range, dest_start - src_start);
         }
-        return ElfMap { data: result };
+        ElfMap { data: result }
     }
 }
 
@@ -31,7 +31,7 @@ impl ElfMap {
         input + self.data.get(&input).unwrap_or(&0)
     }
 
-    fn map_values(&self, values: &Vec<i64>) -> Vec<i64> {
+    fn map_values(&self, values: &[i64]) -> Vec<i64> {
         values.iter().map(|v| self.map_value(*v)).collect()
     }
 
@@ -48,7 +48,7 @@ impl ElfMap {
                 sharded_ranges.insert(range_intersect(src_range, &dst_range));
             }
         }
-        return sharded_ranges;
+        sharded_ranges
     }
 }
 
@@ -67,14 +67,13 @@ fn main() {
 }
 
 fn part_one(input: &Input) -> i64 {
-    input
+    *input
         .maps
         .iter()
         .fold(input.seeds.clone(), |s, m| m.map_values(&s))
         .iter()
         .min()
         .unwrap()
-        .clone()
 }
 
 fn part_two(input: &Input) -> i64 {
@@ -100,12 +99,12 @@ fn parse_input(input: &str) -> IResult<&str, Input> {
     })(input)
 }
 
-fn seed_input_to_ranges(seeds: &Vec<i64>) -> RangeSet<i64> {
+fn seed_input_to_ranges(seeds: &[i64]) -> RangeSet<i64> {
     let mut ret = RangeSet::new();
     for slice in seeds.chunks_exact(2) {
         ret.insert(slice[0]..slice[0] + slice[1]);
     }
-    return ret;
+    ret
 }
 
 fn seedlist(input: &str) -> IResult<&str, Vec<i64>> {

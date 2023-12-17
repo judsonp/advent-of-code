@@ -23,7 +23,7 @@ fn main() {
 }
 
 fn part_one(input: &Input) -> u32 {
-    input.cards.iter().map(|c| card_score(c)).sum()
+    input.cards.iter().map(card_score).sum()
 }
 
 fn part_two(input: &Input) -> u32 {
@@ -43,7 +43,7 @@ fn part_two(input: &Input) -> u32 {
         total_cards += this_copies;
     }
 
-    return total_cards;
+    total_cards
 }
 
 fn card_score(card: &Card) -> u32 {

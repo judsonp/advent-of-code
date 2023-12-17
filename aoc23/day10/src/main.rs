@@ -33,15 +33,14 @@ fn part_one(input: &Graph) -> u32 {
             .get(&cur)
             .unwrap()
             .iter()
-            .filter(|n| **n != last)
-            .next()
+            .find(|n| **n != last)
             .unwrap();
         last = cur;
         cur = *next;
         steps += 1;
     }
 
-    return steps / 2;
+    steps / 2
 }
 
 fn part_two(input: &Graph) -> u32 {
@@ -60,7 +59,7 @@ fn part_two(input: &Graph) -> u32 {
         }
     }
 
-    return inside_cage;
+    inside_cage
 }
 
 fn is_inside_cage(point: &Point, cage: &HashSet<Point>, input: &Graph) -> bool {
@@ -73,7 +72,7 @@ fn is_inside_cage(point: &Point, cage: &HashSet<Point>, input: &Graph) -> bool {
     let ignoring_bad_corners = cage_points_on_downright_diag
         .filter(|p| !is_tangent_diagonal(p, input.graph.get(p).unwrap()));
     let crossings = ignoring_bad_corners.count();
-    return crossings % 2 == 1;
+    crossings % 2 == 1
 }
 
 fn is_tangent_diagonal(p: &Point, adj: &[Point; 2]) -> bool {
@@ -85,7 +84,7 @@ fn is_tangent_diagonal(p: &Point, adj: &[Point; 2]) -> bool {
     if adj[0] == Point::new(p.x, p.y + 1) && adj[1] == Point::new(p.x - 1, p.y) {
         return true;
     }
-    return false;
+    false
 }
 
 fn find_loop(input: &Graph) -> HashSet<Point> {
@@ -104,14 +103,13 @@ fn find_loop(input: &Graph) -> HashSet<Point> {
             .get(&cur)
             .unwrap()
             .iter()
-            .filter(|n| **n != last)
-            .next()
+            .find(|n| **n != last)
             .unwrap();
         last = cur;
         cur = *next;
     }
 
-    return cage;
+    cage
 }
 
 fn parse_input(input: &str) -> Graph {
@@ -138,7 +136,7 @@ fn parse_input(input: &str) -> Graph {
         .unwrap();
     graph.insert(start, connected_to_start);
 
-    return Graph { graph, start };
+    Graph { graph, start }
 }
 
 fn connections(row: i32, col: i32, symbol: char) -> Option<[Point; 2]> {

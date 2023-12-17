@@ -10,16 +10,16 @@ fn main() {
     println!("Part two: {}", part_two(&input));
 }
 
-fn part_one(input: &Vec<Vec<i64>>) -> i64 {
-    input.iter().map(prediction).sum()
+fn part_one(input: &[Vec<i64>]) -> i64 {
+    input.iter().map(|v| prediction(v)).sum()
 }
 
-fn part_two(input: &Vec<Vec<i64>>) -> i64 {
-    input.iter().map(prediction2).sum()
+fn part_two(input: &[Vec<i64>]) -> i64 {
+    input.iter().map(|v| prediction2(v)).sum()
 }
 
-fn prediction(input: &Vec<i64>) -> i64 {
-    let mut seq = input.clone();
+fn prediction(input: &[i64]) -> i64 {
+    let mut seq = input.to_owned();
     let mut result: i64 = *seq.last().unwrap();
     let mut all_zero: bool = false;
     while !all_zero {
@@ -33,11 +33,11 @@ fn prediction(input: &Vec<i64>) -> i64 {
         seq.pop();
         result += seq.last().unwrap();
     }
-    return result;
+    result
 }
 
-fn prediction2(input: &Vec<i64>) -> i64 {
-    let mut seq = input.clone();
+fn prediction2(input: &[i64]) -> i64 {
+    let mut seq = input.to_owned();
     let mut result: i64 = *seq.first().unwrap();
     let mut sign = -1;
     let mut all_zero: bool = false;
@@ -53,7 +53,7 @@ fn prediction2(input: &Vec<i64>) -> i64 {
         result += seq.first().unwrap() * sign;
         sign *= -1;
     }
-    return result;
+    result
 }
 
 fn parse_input(input: &str) -> IResult<&str, Vec<Vec<i64>>> {

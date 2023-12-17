@@ -1,5 +1,5 @@
 use enum_map::{enum_map, Enum, EnumMap};
-use nom;
+
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{line_ending, space1, u32 as nom32};
@@ -98,7 +98,7 @@ fn draw_item(input: &str) -> IResult<&str, (Color, u32)> {
 
 fn draw(input: &str) -> IResult<&str, Draw> {
     map(separated_list0(tag(", "), draw_item), |d| Draw {
-        draw: EnumMap::from_iter(d.into_iter()),
+        draw: EnumMap::from_iter(d),
     })(input)
 }
 

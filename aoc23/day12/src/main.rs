@@ -60,7 +60,7 @@ fn part_two(input: &Input) -> usize {
     input
         .springs
         .par_iter()
-        .map(|spring| unfold(spring))
+        .map(unfold)
         .map(|spring| combinations(&spring.states, &spring.groups, &mut HashMap::new()))
         .sum()
 }
@@ -121,7 +121,7 @@ fn combinations(
         }
     }
 
-    return total_combinations;
+    total_combinations
 }
 
 fn combinations_cached(
@@ -131,11 +131,11 @@ fn combinations_cached(
 ) -> usize {
     let key = (states.len(), groups.len());
     if let Some(result) = cache.get(&key) {
-        return *result;
+        *result
     } else {
         let result = combinations(states, groups, cache);
         cache.insert(key, result);
-        return result;
+        result
     }
 }
 

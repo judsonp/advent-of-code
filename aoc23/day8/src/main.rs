@@ -43,22 +43,22 @@ fn part_one(input: &Input) -> usize {
         current_node = advance_node(input, current_node, direction);
         count += 1;
     }
-    return count;
+    count
 }
 
 fn advance_node<'a>(input: &'a Input, current: &str, direction: &Direction) -> &'a str {
     let node = input.graph.get(current).unwrap();
-    return match direction {
+    match direction {
         Direction::Left => &node.left,
         Direction::Right => &node.right,
-    };
+    }
 }
 
 fn part_two(input: &Input) -> usize {
     let start_nodes: Vec<&str> = input
         .graph
         .keys()
-        .filter(|label| label.ends_with("A"))
+        .filter(|label| label.ends_with('A'))
         .map(|s| -> &str { s })
         .collect();
     let mut path_lengths: Vec<usize> = Vec::new();
@@ -79,7 +79,7 @@ fn check_and_get_path_length(start_node: &str, input: &Input) -> Option<usize> {
     if count != loop_count {
         return None;
     }
-    return Some(count);
+    Some(count)
 }
 
 fn path_to_end<'a>(start: &'a str, input: &'a Input) -> (&'a str, usize) {
@@ -89,7 +89,7 @@ fn path_to_end<'a>(start: &'a str, input: &'a Input) -> (&'a str, usize) {
         let direction = &input.directions[count % input.directions.len()];
         current_node = advance_node(input, current_node, direction);
         count += 1;
-        if current_node.ends_with("Z") {
+        if current_node.ends_with('Z') {
             return (current_node, count);
         }
     }
@@ -104,7 +104,7 @@ fn parse_input(text: &str) -> IResult<&str, Input> {
         graph.insert(label, node);
     }
 
-    return Ok(("", Input { directions, graph }));
+    Ok(("", Input { directions, graph }))
 }
 
 fn directions(text: &str) -> IResult<&str, Vec<Direction>> {

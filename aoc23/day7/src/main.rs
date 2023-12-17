@@ -26,10 +26,7 @@ struct Hand {
 impl Hand {
     fn parse(hand: &str, bid: &str) -> Result<Hand> {
         let bid = bid.parse::<i64>()?;
-        let hand: Vec<u8> = hand
-            .chars()
-            .map(|c| card_value(c))
-            .collect::<Result<Vec<u8>>>()?;
+        let hand: Vec<u8> = hand.chars().map(card_value).collect::<Result<Vec<u8>>>()?;
         let hand: &[u8] = hand
             .chunks_exact(5)
             .next()
@@ -118,14 +115,14 @@ fn part_two(input: Vec<Hand>) -> i64 {
 
 fn parse_input(input: &str) -> Result<Vec<Hand>> {
     input
-        .split("\n")
+        .split('\n')
         .filter(|line| !line.is_empty())
         .map(|line| {
             let (hand, bid) = line
                 .split_whitespace()
                 .next_tuple()
                 .ok_or_else(|| anyhow!("Short input line: {}", line))?;
-            Ok(Hand::parse(hand, bid)?)
+            Hand::parse(hand, bid)
         })
         .collect()
 }
