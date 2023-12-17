@@ -1,6 +1,5 @@
 use grid::Grid;
-use std::collections::BinaryHeap;
-use std::fs;
+use std::{array, fs};
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 enum Direction {
@@ -90,24 +89,53 @@ impl NodeId {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy)]
-struct PathState {
-    cost: u32,
-    id: u32,
+const MAX_PRIORITY_SKEW: u32 = 10;
+
+struct LimitedPriorityQueue {
+    size: usize,
+    base_priority: u32,
+    queues: [Vec<u32>; MAX_PRIORITY_SKEW as usize],
 }
 
-impl Ord for PathState {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.cost
-            .cmp(&other.cost)
-            .reverse()
-            .then(self.id.cmp(&other.id))
+impl LimitedPriorityQueue {
+    fn new() -> Self {
+        Self {
+            size: 0,
+            base_priority: 0,
+            queues: array::from_fn(|_| Vec::new()),
+        }
     }
-}
 
-impl PartialOrd for PathState {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
+    fn is_empty(&self) -> bool {
+        self.size == 0
+    }
+
+    fn push(&mut self, id: u32, priority: u32) {
+        let mut adjusted_priority = priority - self.base_priority;
+
+        // shift priorities down
+        while adjusted_priority >= MAX_PRIORITY_SKEW {
+            assert!(self.queues[0].is_empty());
+            self.queues.rotate_left(1);
+            adjusted_priority -= 1;
+            self.base_priority += 1;
+        }
+
+        self.queues[adjusted_priority as usize].push(id);
+        self.size += 1;
+    }
+
+    fn pop(&mut self) -> (u32, u32) {
+        assert!(self.size > 0);
+        for i in 0..self.queues.len() {
+            if !self.queues[i].is_empty() {
+                let id = self.queues[i].pop().unwrap();
+                let priority = self.base_priority + i as u32;
+                self.size -= 1;
+                return (id, priority);
+            }
+        }
+        unreachable!();
     }
 }
 
@@ -170,30 +198,27 @@ fn crucible_walk(problem: &Problem) -> u32 {
     let start_sentinel = u32::MAX;
 
     let mut costs = vec![0; problem.max_index() as usize];
-    let mut queue = BinaryHeap::new();
+    let mut queue = LimitedPriorityQueue::new();
 
-    queue.push(PathState {
-        cost: 0,
-        id: start_sentinel,
-    });
+    queue.push(start_sentinel, 0);
 
     while !queue.is_empty() {
-        let cur_state: PathState = queue.pop().unwrap();
+        let (cur_id, cur_cost) = queue.pop();
 
         // skip already-marked nodes
-        if cur_state.id != start_sentinel && costs[cur_state.id as usize] != 0 {
+        if cur_id != start_sentinel && costs[cur_id as usize] != 0 {
             continue;
         }
 
         // mark this node
-        if cur_state.id != start_sentinel {
-            costs[cur_state.id as usize] = cur_state.cost;
+        if cur_id != start_sentinel {
+            costs[cur_id as usize] = cur_cost;
         }
 
-        let cur = if cur_state.id == start_sentinel {
+        let cur = if cur_id == start_sentinel {
             start
         } else {
-            problem.index_to_node(cur_state.id)
+            problem.index_to_node(cur_id)
         };
 
         let neighbors = node_neighbors(
@@ -206,16 +231,12 @@ fn crucible_walk(problem: &Problem) -> u32 {
 
         for neighbor in neighbors {
             let neighbor_id = problem.node_to_index(&neighbor);
-            let neighbor_cost = cur_state.cost
+            let neighbor_cost = cur_cost
                 + *problem
                     .grid
                     .get(neighbor.y as usize, neighbor.x as usize)
                     .unwrap() as u32;
-            let neighbor_state = PathState {
-                cost: neighbor_cost,
-                id: neighbor_id,
-            };
-            queue.push(neighbor_state);
+            queue.push(neighbor_id, neighbor_cost);
         }
     }
 
