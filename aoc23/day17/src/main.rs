@@ -42,15 +42,30 @@ impl NodeId {
 fn main() {
     let input_s = fs::read_to_string("inputs/day17.txt").unwrap();
     let input = parse_input(&input_s);
-    let graph = build_graph(&input);
-    println!("Part one: {}", part_one(&input, &graph));
+    println!("Part one: {}", part_one(&input));
+    println!("Part two: {}", part_two(&input));
 }
 
-fn part_one(input: &Grid<u8>, graph: &GraphMap<NodeId, u32, Directed>) -> u32 {
+fn part_one(input: &Grid<u8>) -> u32 {
+    let graph = build_graph(&input, 1, 3);
+    path_cost(input, &graph, 1, 3)
+}
+
+fn part_two(input: &Grid<u8>) -> u32 {
+    let graph = build_graph(&input, 4, 10);
+    path_cost(input, &graph, 4, 10)
+}
+
+fn path_cost(
+    input: &Grid<u8>,
+    graph: &GraphMap<NodeId, u32, Directed>,
+    min_steps: u8,
+    max_steps: u8,
+) -> u32 {
     let start = NodeId::new(0, 0, 0, Direction::None);
     let costs = dijkstra(graph, start, None, |(_, _, &weight)| weight);
 
-    all_dirsteps_iter(input.cols() - 1, input.rows() - 1)
+    all_dirsteps_iter(input.cols() - 1, input.rows() - 1, min_steps, max_steps)
         .filter_map(|id| costs.get(&id))
         .cloned()
         .min()
@@ -70,16 +85,21 @@ fn parse_input(input: &str) -> Grid<u8> {
     return grid;
 }
 
-fn all_dirsteps_iter(x: usize, y: usize) -> impl Iterator<Item = NodeId> {
-    (1..=3).flat_map(move |steps| {
+fn all_dirsteps_iter(
+    x: usize,
+    y: usize,
+    min_steps: u8,
+    max_steps: u8,
+) -> impl Iterator<Item = NodeId> {
+    (min_steps..=max_steps).flat_map(move |steps| {
         DIRECTIONS
             .iter()
             .map(move |&dir| NodeId::new(x as u16, y as u16, steps, dir))
     })
 }
 
-fn all_nodes_iter(cols: usize, rows: usize) -> impl Iterator<Item = NodeId> {
-    (0..cols).flat_map(move |x| (0..rows).flat_map(move |y| all_dirsteps_iter(x, y)))
+fn all_nodes_iter(cols: usize, rows: usize, max_steps: u8) -> impl Iterator<Item = NodeId> {
+    (0..cols).flat_map(move |x| (0..rows).flat_map(move |y| all_dirsteps_iter(x, y, 1, max_steps)))
 }
 
 fn directed_steps(steps: u8, prev_dir: Direction, new_dir: Direction) -> u8 {
@@ -115,28 +135,40 @@ fn opposite_direction(dir: Direction) -> Direction {
     }
 }
 
-fn node_neighbors(id: NodeId, rows: usize, cols: usize) -> impl Iterator<Item = NodeId> {
+fn node_neighbors(
+    id: NodeId,
+    rows: usize,
+    cols: usize,
+    min_steps: u8,
+    max_steps: u8,
+) -> impl Iterator<Item = NodeId> {
     DIRECTIONS
         .iter()
         .filter_map(move |&dir| add_direction(id, dir, rows, cols))
-        // can't take more than 3 steps in the same direction
-        .filter(|neighbor| neighbor.steps <= 3)
         // can't turn around
         .filter(move |neighbor| neighbor.direction != opposite_direction(id.direction))
+        // must move at least min_steps in the same direction before turning
+        .filter(move |neighbor| {
+            id.steps >= min_steps
+                || neighbor.direction == id.direction
+                || id.direction == Direction::None
+        })
+        // can't take more than max_steps steps in the same direction
+        .filter(move |neighbor| neighbor.steps <= max_steps)
 }
 
-fn build_graph(input: &Grid<u8>) -> GraphMap<NodeId, u32, Directed> {
+fn build_graph(input: &Grid<u8>, min_steps: u8, max_steps: u8) -> GraphMap<NodeId, u32, Directed> {
     let mut graph = GraphMap::new();
     let start = NodeId::new(0, 0, 0, Direction::None);
 
-    for id in all_nodes_iter(input.cols(), input.rows()) {
+    for id in all_nodes_iter(input.cols(), input.rows(), max_steps) {
         graph.add_node(id);
     }
     // starting node, which has weird properties
     graph.add_node(start);
 
-    for id in all_nodes_iter(input.cols(), input.rows()) {
-        for neighbor in node_neighbors(id, input.rows(), input.cols()) {
+    for id in all_nodes_iter(input.cols(), input.rows(), max_steps) {
+        for neighbor in node_neighbors(id, input.rows(), input.cols(), min_steps, max_steps) {
             graph.add_edge(
                 id,
                 neighbor,
@@ -144,7 +176,7 @@ fn build_graph(input: &Grid<u8>) -> GraphMap<NodeId, u32, Directed> {
             );
         }
     }
-    for neighbor in node_neighbors(start, input.rows(), input.cols()) {
+    for neighbor in node_neighbors(start, input.rows(), input.cols(), min_steps, max_steps) {
         graph.add_edge(
             start,
             neighbor,
