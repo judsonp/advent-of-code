@@ -113,12 +113,14 @@ impl LimitedPriorityQueue {
     fn push(&mut self, id: u32, priority: u32) {
         let mut adjusted_priority = priority - self.base_priority;
 
-        // shift priorities down
-        while adjusted_priority >= MAX_PRIORITY_SKEW {
-            assert!(self.queues[0].is_empty());
-            self.queues.rotate_left(1);
-            adjusted_priority -= 1;
-            self.base_priority += 1;
+        if adjusted_priority >= MAX_PRIORITY_SKEW {
+            let shift = adjusted_priority - MAX_PRIORITY_SKEW + 1;
+            for i in 0..shift {
+                assert!(self.queues[i as usize].is_empty());
+            }
+            self.queues.rotate_left(shift as usize);
+            adjusted_priority -= shift;
+            self.base_priority += shift;
         }
 
         self.queues[adjusted_priority as usize].push(id);
