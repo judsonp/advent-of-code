@@ -1,12 +1,12 @@
-use std::collections::HashMap;
-use std::fs;
-use num::integer::lcm;
 use nom::bytes::complete::tag;
 use nom::character::complete::{alpha1, line_ending, multispace0, one_of, space0};
 use nom::combinator::{complete, map};
-use nom::IResult;
 use nom::multi::{many1, separated_list1};
 use nom::sequence::{delimited, separated_pair, terminated};
+use nom::IResult;
+use num::integer::lcm;
+use std::collections::HashMap;
+use std::fs;
 
 type NodeLabel = String;
 
@@ -55,9 +55,12 @@ fn advance_node<'a>(input: &'a Input, current: &str, direction: &Direction) -> &
 }
 
 fn part_two(input: &Input) -> usize {
-    let start_nodes: Vec<&str> = input.graph.keys()
+    let start_nodes: Vec<&str> = input
+        .graph
+        .keys()
         .filter(|label| label.ends_with("A"))
-        .map(|s| -> &str { s }).collect();
+        .map(|s| -> &str { s })
+        .collect();
     let mut path_lengths: Vec<usize> = Vec::new();
     for start_node in start_nodes {
         let path_len = check_and_get_path_length(start_node, input);
@@ -93,7 +96,8 @@ fn path_to_end<'a>(start: &'a str, input: &'a Input) -> (&'a str, usize) {
 }
 
 fn parse_input(text: &str) -> IResult<&str, Input> {
-    let (_, (directions, nodes)) = complete(separated_pair(directions, multispace0, nodelist))(text)?;
+    let (_, (directions, nodes)) =
+        complete(separated_pair(directions, multispace0, nodelist))(text)?;
     let mut graph: HashMap<NodeLabel, Node> = HashMap::new();
 
     for (label, node) in nodes {
@@ -104,13 +108,14 @@ fn parse_input(text: &str) -> IResult<&str, Input> {
 }
 
 fn directions(text: &str) -> IResult<&str, Vec<Direction>> {
-    terminated(many1(map(one_of("LR"), |c| {
-        match c {
+    terminated(
+        many1(map(one_of("LR"), |c| match c {
             'L' => Direction::Left,
             'R' => Direction::Right,
             _ => panic!("Invalid input: {}", c),
-        }
-    })), multispace0)(text)
+        })),
+        multispace0,
+    )(text)
 }
 
 fn nodelist(text: &str) -> IResult<&str, Vec<(NodeLabel, Node)>> {
@@ -122,8 +127,14 @@ fn node(text: &str) -> IResult<&str, (NodeLabel, Node)> {
 }
 
 fn nodedata(text: &str) -> IResult<&str, Node> {
-    map(delimited(tag("("), separated_pair(nodelabel, delimited(space0, tag(","), space0), nodelabel), tag(")")),
-        |(left, right)| Node { left, right })(text)
+    map(
+        delimited(
+            tag("("),
+            separated_pair(nodelabel, delimited(space0, tag(","), space0), nodelabel),
+            tag(")"),
+        ),
+        |(left, right)| Node { left, right },
+    )(text)
 }
 
 fn nodelabel(text: &str) -> IResult<&str, NodeLabel> {

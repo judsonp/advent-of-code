@@ -1,9 +1,9 @@
 use grid::Grid;
 use itertools::Itertools;
+use rayon::prelude::*;
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::fs;
-use rayon::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 struct Point {
@@ -103,6 +103,7 @@ struct Opgrid {
 }
 
 impl Opgrid {
+    #[allow(dead_code)]
     fn to_string(&self) -> String {
         self.grid
             .iter_rows()
@@ -116,6 +117,7 @@ struct Illumination {
 }
 
 impl Illumination {
+    #[allow(dead_code)]
     fn to_string(&self) -> String {
         self.grid
             .iter_rows()
@@ -144,11 +146,17 @@ fn part_one(ops: &Opgrid) -> usize {
 fn part_two(ops: &Opgrid) -> usize {
     let rights = (0..ops.grid.rows()).map(|r| Beam::new(Point::new(0, r), Direction::Right));
     let downs = (0..ops.grid.cols()).map(|c| Beam::new(Point::new(c, 0), Direction::Down));
-    let lefts = (0..ops.grid.rows()).map(|r| Beam::new(Point::new(ops.grid.cols() - 1, r), Direction::Left));
-    let ups = (0..ops.grid.cols()).map(|c| Beam::new(Point::new(c, ops.grid.rows() - 1), Direction::Up));
+    let lefts = (0..ops.grid.rows())
+        .map(|r| Beam::new(Point::new(ops.grid.cols() - 1, r), Direction::Left));
+    let ups =
+        (0..ops.grid.cols()).map(|c| Beam::new(Point::new(c, ops.grid.rows() - 1), Direction::Up));
     let beams = rights.chain(downs).chain(lefts).chain(ups).collect_vec();
 
-    return beams.par_iter().map(|beam| illumination_score(ops, *beam)).max().unwrap();
+    return beams
+        .par_iter()
+        .map(|beam| illumination_score(ops, *beam))
+        .max()
+        .unwrap();
 }
 
 fn illumination_score(ops: &Opgrid, beam: Beam) -> usize {

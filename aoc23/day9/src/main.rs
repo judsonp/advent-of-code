@@ -1,7 +1,7 @@
-use std::fs;
 use nom::character::complete::{i64 as pi64, line_ending, space1};
-use nom::IResult;
 use nom::multi::separated_list1;
+use nom::IResult;
+use std::fs;
 
 fn main() {
     let input_s = fs::read_to_string("inputs/day9.txt").unwrap();
@@ -56,6 +56,6 @@ fn prediction2(input: &Vec<i64>) -> i64 {
     return result;
 }
 
-fn parse_input(input: &str) -> IResult<&str, Vec<Vec<i64>>>{
+fn parse_input(input: &str) -> IResult<&str, Vec<Vec<i64>>> {
     separated_list1(line_ending, separated_list1(space1, pi64))(input)
 }

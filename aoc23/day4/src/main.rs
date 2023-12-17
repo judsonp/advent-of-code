@@ -1,10 +1,10 @@
-use std::fs;
 use nom::bytes::complete::tag;
-use nom::character::complete::{u32 as nom32, line_ending, space0, space1};
+use nom::character::complete::{line_ending, space0, space1, u32 as nom32};
 use nom::combinator::{all_consuming, map, opt};
-use nom::IResult;
 use nom::multi::{separated_list0, separated_list1};
 use nom::sequence::{delimited, terminated, tuple};
+use nom::IResult;
+use std::fs;
 
 struct Card {
     winning: Vec<u32>,
@@ -23,9 +23,7 @@ fn main() {
 }
 
 fn part_one(input: &Input) -> u32 {
-    input.cards.iter()
-        .map(|c| card_score(c))
-        .sum()
+    input.cards.iter().map(|c| card_score(c)).sum()
 }
 
 fn part_two(input: &Input) -> u32 {
@@ -33,9 +31,13 @@ fn part_two(input: &Input) -> u32 {
     let mut copies = vec![1; input.cards.len()];
 
     for (i, card) in input.cards.iter().enumerate() {
-        let matches = card.have.iter().filter(|n| card.winning.contains(n)).count();
+        let matches = card
+            .have
+            .iter()
+            .filter(|n| card.winning.contains(n))
+            .count();
         let this_copies = copies[i];
-        for v in &mut copies[i+1..i+1+matches] {
+        for v in &mut copies[i + 1..i + 1 + matches] {
             *v += this_copies;
         }
         total_cards += this_copies;
@@ -45,22 +47,43 @@ fn part_two(input: &Input) -> u32 {
 }
 
 fn card_score(card: &Card) -> u32 {
-    let count = card.have.iter().filter(|n| card.winning.contains(n)).count();
-    if count > 0 { 1 << (count - 1) } else { 0 }
+    let count = card
+        .have
+        .iter()
+        .filter(|n| card.winning.contains(n))
+        .count();
+    if count > 0 {
+        1 << (count - 1)
+    } else {
+        0
+    }
 }
 
 fn parse_input(input: &str) -> IResult<&str, Input> {
-    all_consuming(map(terminated(separated_list1(line_ending, card), opt(line_ending)),
-                      |c| Input { cards: c }))(input)
+    all_consuming(map(
+        terminated(separated_list1(line_ending, card), opt(line_ending)),
+        |c| Input { cards: c },
+    ))(input)
 }
 
 fn card(input: &str) -> IResult<&str, Card> {
-    map(tuple((header, numberlist, delimited(space0, tag("|"), space0), numberlist)),
-        |(_, winning, _, have)| Card { winning, have })(input)
+    map(
+        tuple((
+            header,
+            numberlist,
+            delimited(space0, tag("|"), space0),
+            numberlist,
+        )),
+        |(_, winning, _, have)| Card { winning, have },
+    )(input)
 }
 
 fn header(input: &str) -> IResult<&str, u32> {
-    delimited(terminated(tag("Card"), space1), nom32, terminated(tag(":"), space1))(input)
+    delimited(
+        terminated(tag("Card"), space1),
+        nom32,
+        terminated(tag(":"), space1),
+    )(input)
 }
 
 fn numberlist(input: &str) -> IResult<&str, Vec<u32>> {
@@ -73,8 +96,7 @@ mod tests {
 
     #[test]
     fn parse_numlist() {
-        assert_eq!(numberlist("1  2 23    6"),
-                   Ok(("", vec![1, 2, 23, 6])))
+        assert_eq!(numberlist("1  2 23    6"), Ok(("", vec![1, 2, 23, 6])))
     }
 
     #[test]

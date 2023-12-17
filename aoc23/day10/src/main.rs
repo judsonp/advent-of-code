@@ -1,6 +1,6 @@
+use derive_more::Constructor;
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use derive_more::Constructor;
 
 #[derive(Constructor, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Copy)]
 struct Point {
@@ -28,8 +28,14 @@ fn part_one(input: &Graph) -> u32 {
     let mut last = start;
 
     while cur != start {
-        let next = input.graph.get(&cur).unwrap().iter()
-            .filter(|n| **n != last).next().unwrap();
+        let next = input
+            .graph
+            .get(&cur)
+            .unwrap()
+            .iter()
+            .filter(|n| **n != last)
+            .next()
+            .unwrap();
         last = cur;
         cur = *next;
         steps += 1;
@@ -61,10 +67,11 @@ fn is_inside_cage(point: &Point, cage: &HashSet<Point>, input: &Graph) -> bool {
     if cage.contains(point) {
         return false;
     }
-    let cage_points_on_downright_diag =
-        cage.iter().filter(|p| p.x > point.x && (p.x - point.x == p.y - point.y));
-    let ignoring_bad_corners
-        = cage_points_on_downright_diag.filter(|p| !is_tangent_diagonal(p, input.graph.get(p).unwrap()));
+    let cage_points_on_downright_diag = cage
+        .iter()
+        .filter(|p| p.x > point.x && (p.x - point.x == p.y - point.y));
+    let ignoring_bad_corners = cage_points_on_downright_diag
+        .filter(|p| !is_tangent_diagonal(p, input.graph.get(p).unwrap()));
     let crossings = ignoring_bad_corners.count();
     return crossings % 2 == 1;
 }
@@ -92,15 +99,20 @@ fn find_loop(input: &Graph) -> HashSet<Point> {
 
     while cur != start {
         cage.insert(cur);
-        let next = input.graph.get(&cur).unwrap().iter()
-            .filter(|n| **n != last).next().unwrap();
+        let next = input
+            .graph
+            .get(&cur)
+            .unwrap()
+            .iter()
+            .filter(|n| **n != last)
+            .next()
+            .unwrap();
         last = cur;
         cur = *next;
     }
 
     return cage;
 }
-
 
 fn parse_input(input: &str) -> Graph {
     let mut graph: HashMap<Point, [Point; 2]> = HashMap::new();
@@ -117,10 +129,13 @@ fn parse_input(input: &str) -> Graph {
     }
 
     let start = start.unwrap();
-    let connected_to_start: [Point; 2] = graph.iter()
+    let connected_to_start: [Point; 2] = graph
+        .iter()
         .filter(|(_, conns)| conns[0] == start || conns[1] == start)
         .map(|(loc, _)| *loc)
-        .collect::<Vec<_>>().try_into().unwrap();
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap();
     graph.insert(start, connected_to_start);
 
     return Graph { graph, start };

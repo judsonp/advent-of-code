@@ -5,10 +5,6 @@ struct Field {
     cols: Vec<u64>,
 }
 
-fn field_elem_get(elem: &u64, pos: usize) -> bool {
-    (elem >> pos) & 0x1 == 1
-}
-
 fn field_elem_set(elem: &mut u64, pos: usize) {
     *elem = *elem | (0x1 << pos);
 }
@@ -21,13 +17,15 @@ fn main() {
 }
 
 fn part_one(input: &Vec<Field>) -> usize {
-    input.iter()
+    input
+        .iter()
         .map(|field| smudged_field_score(field, 0))
         .sum()
 }
 
 fn part_two(input: &Vec<Field>) -> usize {
-    input.iter()
+    input
+        .iter()
         .map(|field| smudged_field_score(field, 1))
         .sum()
 }
@@ -43,13 +41,16 @@ fn smudged_field_score(field: &Field, target: u32) -> usize {
 }
 
 fn find_smudged_reflect(elems: &Vec<u64>, target: u32) -> Option<usize> {
-    (1..elems.len()).filter(|idx| has_smudged_reflect(elems, *idx, target)).next()
+    (1..elems.len())
+        .filter(|idx| has_smudged_reflect(elems, *idx, target))
+        .next()
 }
 
 fn has_smudged_reflect(elems: &Vec<u64>, idx: usize, target: u32) -> bool {
     let left = (0..idx).rev();
     let right = idx..elems.len();
-    let diffcount = left.zip(right)
+    let diffcount = left
+        .zip(right)
         .map(|(i1, i2)| elems[i1] ^ elems[i2])
         .map(|x| x.count_ones())
         .sum::<u32>();

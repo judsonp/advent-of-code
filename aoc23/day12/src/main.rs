@@ -1,15 +1,16 @@
-use std::fmt::{Display, Formatter};
-use std::{fs, iter};
-use std::cmp::min;
-use std::collections::HashMap;
+use itertools::Itertools;
 use nom::bytes::complete::tag;
 use nom::character::complete::{line_ending, one_of, space1, u64 as nom_u64};
 use nom::combinator::map;
-use nom::IResult;
 use nom::multi::{many1, separated_list1};
 use nom::sequence::separated_pair;
+use nom::IResult;
 use rayon::prelude::*;
-use itertools::Itertools;
+use std::cmp::min;
+use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
+use std::fs;
+use std::iter::repeat;
 
 #[derive(Debug, PartialEq, Copy, Clone, Eq, Hash)]
 enum SpringState {
@@ -48,26 +49,33 @@ fn main() {
 }
 
 fn part_one(input: &Input) -> usize {
-    input.springs.par_iter()
+    input
+        .springs
+        .par_iter()
         .map(|spring| combinations(&spring.states, &spring.groups, &mut HashMap::new()))
         .sum()
 }
 
 fn part_two(input: &Input) -> usize {
-    input.springs
+    input
+        .springs
         .par_iter()
         .map(|spring| unfold(spring))
         .map(|spring| combinations(&spring.states, &spring.groups, &mut HashMap::new()))
         .sum()
 }
 
-fn combinations(states: &[SpringState], groups: &[usize], cache: &mut HashMap<(usize, usize),usize>) -> usize {
+fn combinations(
+    states: &[SpringState],
+    groups: &[usize],
+    cache: &mut HashMap<(usize, usize), usize>,
+) -> usize {
     if groups.is_empty() {
         return if states.iter().any(|&s| s == SpringState::Damaged) {
             0
         } else {
             1
-        }
+        };
     }
 
     // groups is not empty, so this is not a valid state
@@ -88,22 +96,23 @@ fn combinations(states: &[SpringState], groups: &[usize], cache: &mut HashMap<(u
         return 0;
     }
 
-    for tent_start_pos in 0..=(states.len()-group_size) {
+    for tent_start_pos in 0..=(states.len() - group_size) {
         // If this is true, we cannot consider all of the springs in the proposed range
         // to be Damaged, because at least one of them is Operational.
-        let damaged_range_invalid = states[tent_start_pos..tent_start_pos+group_size]
-            .iter().any(|&s| s == SpringState::Operational);
+        let damaged_range_invalid = states[tent_start_pos..tent_start_pos + group_size]
+            .iter()
+            .any(|&s| s == SpringState::Operational);
         // If this is true, then the proposed range cannot be this group of Damaged springs,
         // because the subsequent spring is also Damaged (so there is not the necessary terminator).
-        let operational_terminator_impossible = (states.len() > tent_start_pos + group_size) &&
-            (states[tent_start_pos + group_size] == SpringState::Damaged);
+        let operational_terminator_impossible = (states.len() > tent_start_pos + group_size)
+            && (states[tent_start_pos + group_size] == SpringState::Damaged);
         // If this is true, this is the last possible tentative placement, since after this point,
         // one of the springs to the left of the tentative placement will be damaged.
         let last_possible_placement = states[tent_start_pos] == SpringState::Damaged;
 
         if !damaged_range_invalid && !operational_terminator_impossible {
             // Possible range placement
-            let remaining_state = &states[min(states.len(), tent_start_pos+group_size+1)..];
+            let remaining_state = &states[min(states.len(), tent_start_pos + group_size + 1)..];
             total_combinations += combinations_cached(remaining_state, remaining_groups, cache);
         }
 
@@ -115,8 +124,11 @@ fn combinations(states: &[SpringState], groups: &[usize], cache: &mut HashMap<(u
     return total_combinations;
 }
 
-fn combinations_cached(states: &[SpringState], groups: &[usize],
-                       cache: &mut HashMap<(usize,usize),usize>) -> usize {
+fn combinations_cached(
+    states: &[SpringState],
+    groups: &[usize],
+    cache: &mut HashMap<(usize, usize), usize>,
+) -> usize {
     let key = (states.len(), groups.len());
     if let Some(result) = cache.get(&key) {
         return *result;
@@ -128,24 +140,33 @@ fn combinations_cached(states: &[SpringState], groups: &[usize],
 }
 
 fn unfold(spring: &Spring) -> Spring {
-    let groups = iter::repeat(&spring.groups).take(5).flatten().cloned().collect_vec();
-    let states = iter::repeat(&spring.states).take(5)
-        .intersperse(&vec![SpringState::Unknown])
-        .flatten().cloned().collect_vec();
+    let groups = repeat(&spring.groups)
+        .take(5)
+        .flatten()
+        .cloned()
+        .collect_vec();
+    let states =
+        Itertools::intersperse(repeat(&spring.states).take(5), &vec![SpringState::Unknown])
+            .flatten()
+            .cloned()
+            .collect_vec();
     Spring { states, groups }
 }
 
 fn parse_input(input: &str) -> IResult<&str, Input> {
-    map(separated_list1(line_ending, parse_spring),
-        |v| Input { springs: v })(input)
+    map(separated_list1(line_ending, parse_spring), |v| Input {
+        springs: v,
+    })(input)
 }
 
 fn parse_spring(input: &str) -> IResult<&str, Spring> {
-    map(separated_pair(parse_spring_state, space1, parse_group_sizes),
+    map(
+        separated_pair(parse_spring_state, space1, parse_group_sizes),
         |(state, sizes)| Spring {
             states: state,
             groups: sizes,
-        })(input)
+        },
+    )(input)
 }
 
 fn parse_spring_state(input: &str) -> IResult<&str, Vec<SpringState>> {

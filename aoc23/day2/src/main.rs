@@ -1,14 +1,14 @@
-use std::cmp::max;
-use std::fs;
+use enum_map::{enum_map, Enum, EnumMap};
 use nom;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::character::complete::{u32 as nom32, space1, line_ending};
+use nom::character::complete::{line_ending, space1, u32 as nom32};
 use nom::combinator::{all_consuming, map, opt};
-use nom::IResult;
 use nom::multi::separated_list0;
 use nom::sequence::{pair, separated_pair, terminated, tuple};
-use enum_map::{enum_map, Enum, EnumMap};
+use nom::IResult;
+use std::cmp::max;
+use std::fs;
 
 #[derive(Debug, PartialEq, Enum, Copy, Clone)]
 enum Color {
@@ -24,13 +24,12 @@ struct Draw {
 
 impl Draw {
     fn contains(&self, other: &Draw) -> bool {
-        self.draw.iter()
-            .all(|(c, n)| other.draw[c] <= *n)
+        self.draw.iter().all(|(c, n)| other.draw[c] <= *n)
     }
 
     fn superset(&self, other: &Draw) -> Draw {
         Draw {
-            draw: EnumMap::from_fn(|c| max(self.draw[c], other.draw[c]))
+            draw: EnumMap::from_fn(|c| max(self.draw[c], other.draw[c])),
         }
     }
 }
@@ -56,23 +55,30 @@ fn main() {
 fn part_one(input: &Input) -> u32 {
     let ref_contents = Draw {
         draw: enum_map! {
-        Color::Red => 12,
-        Color::Green => 13,
-        Color::Blue => 14,
-    }
+            Color::Red => 12,
+            Color::Green => 13,
+            Color::Blue => 14,
+        },
     };
-    input.games.iter()
+    input
+        .games
+        .iter()
         .filter(|g| g.draws.iter().all(|d| ref_contents.contains(d)))
         .map(|g| g.id)
         .sum()
 }
 
 fn part_two(input: &Input) -> u32 {
-    input.games.iter()
+    input
+        .games
+        .iter()
         .map(|g| {
             g.draws.iter().fold(
-                Draw { draw: enum_map! {_ => 0} },
-                |acc, e| acc.superset(e))
+                Draw {
+                    draw: enum_map! {_ => 0},
+                },
+                |acc, e| acc.superset(e),
+            )
         })
         .map(|d| d.draw.values().product::<u32>())
         .sum()
@@ -82,7 +88,8 @@ fn color(input: &str) -> IResult<&str, Color> {
     alt((
         map(tag("red"), |_| Color::Red),
         map(tag("green"), |_| Color::Green),
-        map(tag("blue"), |_| Color::Blue)))(input)
+        map(tag("blue"), |_| Color::Blue),
+    ))(input)
 }
 
 fn draw_item(input: &str) -> IResult<&str, (Color, u32)> {
@@ -90,8 +97,9 @@ fn draw_item(input: &str) -> IResult<&str, (Color, u32)> {
 }
 
 fn draw(input: &str) -> IResult<&str, Draw> {
-    map(separated_list0(tag(", "), draw_item),
-        |d| Draw { draw: EnumMap::from_iter(d.into_iter()) })(input)
+    map(separated_list0(tag(", "), draw_item), |d| Draw {
+        draw: EnumMap::from_iter(d.into_iter()),
+    })(input)
 }
 
 fn draws(input: &str) -> IResult<&str, Vec<Draw>> {
@@ -99,7 +107,9 @@ fn draws(input: &str) -> IResult<&str, Vec<Draw>> {
 }
 
 fn header(input: &str) -> IResult<&str, u32> {
-    map(tuple((tag("Game"), space1, nom32, tag(":"), space1)), |r| r.2)(input)
+    map(tuple((tag("Game"), space1, nom32, tag(":"), space1)), |r| {
+        r.2
+    })(input)
 }
 
 fn game(input: &str) -> IResult<&str, Game> {
@@ -107,8 +117,10 @@ fn game(input: &str) -> IResult<&str, Game> {
 }
 
 fn parse_input(input: &str) -> IResult<&str, Input> {
-    all_consuming(map(terminated(separated_list0(line_ending, game), opt(line_ending)),
-                      |g| Input { games: g }))(input)
+    all_consuming(map(
+        terminated(separated_list0(line_ending, game), opt(line_ending)),
+        |g| Input { games: g },
+    ))(input)
 }
 
 #[cfg(test)]
@@ -117,34 +129,69 @@ mod tests {
 
     #[test]
     fn parse_color() {
-        assert_eq!(color("green"),
-                   Ok(("", Color::Green)))
+        assert_eq!(color("green"), Ok(("", Color::Green)))
     }
 
     #[test]
     fn parse_draw() {
-        assert_eq!(draw("3 green"),
-                   Ok(("", Draw { draw: enum_map! { Color::Green => 3, _ => 0 } })))
+        assert_eq!(
+            draw("3 green"),
+            Ok((
+                "",
+                Draw {
+                    draw: enum_map! { Color::Green => 3, _ => 0 }
+                }
+            ))
+        )
     }
 
     #[test]
     fn parse_draw_multi() {
-        assert_eq!(draw("3 green, 1 blue"),
-                   Ok(("", Draw { draw: enum_map! { Color::Green => 3, Color::Blue => 1, _ => 0 } })))
+        assert_eq!(
+            draw("3 green, 1 blue"),
+            Ok((
+                "",
+                Draw {
+                    draw: enum_map! { Color::Green => 3, Color::Blue => 1, _ => 0 }
+                }
+            ))
+        )
     }
 
     #[test]
     fn parse_draws() {
-        assert_eq!(draws("3 green; 1 red"),
-                   Ok(("", vec![Draw { draw: enum_map! {Color::Green => 3, _ => 0} },
-                                Draw { draw: enum_map! {Color::Red => 1, _ => 0} }])))
+        assert_eq!(
+            draws("3 green; 1 red"),
+            Ok((
+                "",
+                vec![
+                    Draw {
+                        draw: enum_map! {Color::Green => 3, _ => 0}
+                    },
+                    Draw {
+                        draw: enum_map! {Color::Red => 1, _ => 0}
+                    }
+                ]
+            ))
+        )
     }
 
     #[test]
     fn parse_draws_multi() {
-        assert_eq!(draws("3 green, 1 blue; 1 red, 2 green"),
-                   Ok(("", vec![Draw { draw: enum_map! {Color::Green => 3, Color::Blue => 1, _ => 0} },
-                                Draw { draw: enum_map! {Color::Red => 1, Color::Green => 2, _ => 0} }])))
+        assert_eq!(
+            draws("3 green, 1 blue; 1 red, 2 green"),
+            Ok((
+                "",
+                vec![
+                    Draw {
+                        draw: enum_map! {Color::Green => 3, Color::Blue => 1, _ => 0}
+                    },
+                    Draw {
+                        draw: enum_map! {Color::Red => 1, Color::Green => 2, _ => 0}
+                    }
+                ]
+            ))
+        )
     }
 
     #[test]

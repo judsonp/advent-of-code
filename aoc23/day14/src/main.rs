@@ -44,6 +44,7 @@ struct Rocks {
 }
 
 impl Rocks {
+    #[allow(dead_code)]
     fn to_string(&self) -> String {
         self.rocks
             .iter_rows()

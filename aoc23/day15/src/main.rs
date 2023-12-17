@@ -1,5 +1,5 @@
-use std::fs;
 use array_init::array_init;
+use std::fs;
 
 #[derive(Clone)]
 struct Lens {
@@ -11,8 +11,13 @@ struct Snowbox(Vec<Lens>);
 
 impl Snowbox {
     fn upsert(&mut self, label: String, value: u8) {
-        let existing = self.0.iter().enumerate()
-            .find_map(|(idx, lens)| if lens.label.eq(&label) { Some(idx) } else { None });
+        let existing = self.0.iter().enumerate().find_map(|(idx, lens)| {
+            if lens.label.eq(&label) {
+                Some(idx)
+            } else {
+                None
+            }
+        });
         if let Some(idx) = existing {
             *self.0.get_mut(idx).unwrap() = Lens { label, value };
         } else {
@@ -21,8 +26,13 @@ impl Snowbox {
     }
 
     fn delete(&mut self, label: String) {
-        let existing = self.0.iter().enumerate()
-            .find_map(|(idx, lens)| if lens.label.eq(&label) { Some(idx) } else { None });
+        let existing = self.0.iter().enumerate().find_map(|(idx, lens)| {
+            if lens.label.eq(&label) {
+                Some(idx)
+            } else {
+                None
+            }
+        });
         if let Some(idx) = existing {
             self.0.remove(idx);
         }
@@ -52,13 +62,8 @@ impl Snowmap {
 }
 
 enum Instruction {
-    Set {
-        label: String,
-        value: u8,
-    },
-    Delete {
-        label: String,
-    }
+    Set { label: String, value: u8 },
+    Delete { label: String },
 }
 
 fn main() {
@@ -79,18 +84,28 @@ fn part_two(input: &Vec<&str>) -> u64 {
         match instruction {
             Instruction::Set { label, value } => {
                 snowmap.upsert(label, value);
-            },
+            }
             Instruction::Delete { label } => {
                 snowmap.delete(label);
             }
         }
     }
 
-    snowmap.boxes.iter().enumerate().map(|(box_idx, snowbox)| {
-        snowbox.0.iter().enumerate().map(|(lens_idx, lens)| {
-            ((box_idx + 1) * (lens_idx + 1) * (lens.value as usize)) as u64
-        }).sum::<u64>()
-    }).sum()
+    snowmap
+        .boxes
+        .iter()
+        .enumerate()
+        .map(|(box_idx, snowbox)| {
+            snowbox
+                .0
+                .iter()
+                .enumerate()
+                .map(|(lens_idx, lens)| {
+                    ((box_idx + 1) * (lens_idx + 1) * (lens.value as usize)) as u64
+                })
+                .sum::<u64>()
+        })
+        .sum()
 }
 
 fn parse_instr(instr: &str) -> Instruction {
