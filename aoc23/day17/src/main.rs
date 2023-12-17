@@ -1,16 +1,38 @@
 use grid::Grid;
-use petgraph::algo::dijkstra;
-use petgraph::graphmap::GraphMap;
-use petgraph::Directed;
+use std::collections::BinaryHeap;
 use std::fs;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 enum Direction {
     None,
     Up,
     Down,
     Left,
     Right,
+}
+
+impl From<u32> for Direction {
+    fn from(value: u32) -> Self {
+        match value {
+            0 => Direction::Up,
+            1 => Direction::Down,
+            2 => Direction::Left,
+            3 => Direction::Right,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl From<Direction> for u32 {
+    fn from(value: Direction) -> Self {
+        match value {
+            Direction::Up => 0,
+            Direction::Down => 1,
+            Direction::Left => 2,
+            Direction::Right => 3,
+            Direction::None => unreachable!(),
+        }
+    }
 }
 
 const DIRECTIONS: [Direction; 4] = [
@@ -20,7 +42,7 @@ const DIRECTIONS: [Direction; 4] = [
     Direction::Right,
 ];
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 struct NodeId {
     x: u16,
     y: u16,
@@ -37,6 +59,85 @@ impl NodeId {
             direction,
         }
     }
+
+    fn to_index(&self, _max_x: u16, max_y: u16, max_steps: u8) -> u32 {
+        // note: max x/y is exclusive, max steps is inclusive
+        // note: steps = 0 is not a supported state
+        assert!(self.steps != 0);
+        assert!(self.direction != Direction::None);
+        let mut id = self.x as u32;
+        id = (id * max_y as u32) + self.y as u32;
+        id = (id * max_steps as u32) + (self.steps as u32 - 1);
+        id = (id * 4) + <Direction as Into<u32>>::into(self.direction);
+        return id;
+    }
+
+    fn from_index(id: u32, _max_x: u16, max_y: u16, max_steps: u8) -> Self {
+        let mut rem = id;
+        let dir_no = rem % 4;
+        rem /= 4;
+        let steps = (rem % max_steps as u32) + 1;
+        rem /= max_steps as u32;
+        let y = rem % max_y as u32;
+        rem /= max_y as u32;
+        let x = rem;
+        Self {
+            x: x as u16,
+            y: y as u16,
+            steps: steps as u8,
+            direction: dir_no.into(),
+        }
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Copy)]
+struct PathState {
+    cost: u32,
+    id: u32,
+}
+
+impl Ord for PathState {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.cost
+            .cmp(&other.cost)
+            .reverse()
+            .then(self.id.cmp(&other.id))
+    }
+}
+
+impl PartialOrd for PathState {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+struct Problem<'a> {
+    grid: &'a Grid<u8>,
+    min_steps: u8,
+    max_steps: u8,
+}
+
+impl Problem<'_> {
+    fn node_to_index(&self, node: &NodeId) -> u32 {
+        node.to_index(
+            self.grid.cols() as u16,
+            self.grid.rows() as u16,
+            self.max_steps,
+        )
+    }
+
+    fn index_to_node(&self, id: u32) -> NodeId {
+        NodeId::from_index(
+            id,
+            self.grid.cols() as u16,
+            self.grid.rows() as u16,
+            self.max_steps,
+        )
+    }
+
+    fn max_index(&self) -> u32 {
+        (self.grid.cols() * self.grid.rows() * (self.max_steps as usize) * 4) as u32
+    }
 }
 
 fn main() {
@@ -47,29 +148,88 @@ fn main() {
 }
 
 fn part_one(input: &Grid<u8>) -> u32 {
-    let graph = build_graph(&input, 1, 3);
-    path_cost(input, &graph, 1, 3)
+    let problem = Problem {
+        grid: &input,
+        min_steps: 1,
+        max_steps: 3,
+    };
+    crucible_walk(&problem)
 }
 
 fn part_two(input: &Grid<u8>) -> u32 {
-    let graph = build_graph(&input, 4, 10);
-    path_cost(input, &graph, 4, 10)
+    let problem = Problem {
+        grid: &input,
+        min_steps: 4,
+        max_steps: 10,
+    };
+    crucible_walk(&problem)
 }
 
-fn path_cost(
-    input: &Grid<u8>,
-    graph: &GraphMap<NodeId, u32, Directed>,
-    min_steps: u8,
-    max_steps: u8,
-) -> u32 {
+fn crucible_walk(problem: &Problem) -> u32 {
     let start = NodeId::new(0, 0, 0, Direction::None);
-    let costs = dijkstra(graph, start, None, |(_, _, &weight)| weight);
+    let start_sentinel = u32::MAX;
 
-    all_dirsteps_iter(input.cols() - 1, input.rows() - 1, min_steps, max_steps)
-        .filter_map(|id| costs.get(&id))
-        .cloned()
-        .min()
-        .unwrap()
+    let mut costs = vec![0; problem.max_index() as usize];
+    let mut queue = BinaryHeap::new();
+
+    queue.push(PathState {
+        cost: 0,
+        id: start_sentinel,
+    });
+
+    while !queue.is_empty() {
+        let cur_state: PathState = queue.pop().unwrap();
+
+        // skip already-marked nodes
+        if cur_state.id != start_sentinel && costs[cur_state.id as usize] != 0 {
+            continue;
+        }
+
+        // mark this node
+        if cur_state.id != start_sentinel {
+            costs[cur_state.id as usize] = cur_state.cost;
+        }
+
+        let cur = if cur_state.id == start_sentinel {
+            start
+        } else {
+            problem.index_to_node(cur_state.id)
+        };
+
+        let neighbors = node_neighbors(
+            cur,
+            problem.grid.rows(),
+            problem.grid.cols(),
+            problem.min_steps,
+            problem.max_steps,
+        );
+
+        for neighbor in neighbors {
+            let neighbor_id = problem.node_to_index(&neighbor);
+            let neighbor_cost = cur_state.cost
+                + *problem
+                    .grid
+                    .get(neighbor.y as usize, neighbor.x as usize)
+                    .unwrap() as u32;
+            let neighbor_state = PathState {
+                cost: neighbor_cost,
+                id: neighbor_id,
+            };
+            queue.push(neighbor_state);
+        }
+    }
+
+    all_dirsteps_iter(
+        problem.grid.cols() - 1,
+        problem.grid.rows() - 1,
+        problem.min_steps,
+        problem.max_steps,
+    )
+    .map(|id| problem.node_to_index(&id))
+    .map(|idx| costs[idx as usize])
+    .filter(|&cost| cost != 0)
+    .min()
+    .unwrap()
 }
 
 fn parse_input(input: &str) -> Grid<u8> {
@@ -96,10 +256,6 @@ fn all_dirsteps_iter(
             .iter()
             .map(move |&dir| NodeId::new(x as u16, y as u16, steps, dir))
     })
-}
-
-fn all_nodes_iter(cols: usize, rows: usize, max_steps: u8) -> impl Iterator<Item = NodeId> {
-    (0..cols).flat_map(move |x| (0..rows).flat_map(move |y| all_dirsteps_iter(x, y, 1, max_steps)))
 }
 
 fn directed_steps(steps: u8, prev_dir: Direction, new_dir: Direction) -> u8 {
@@ -155,34 +311,4 @@ fn node_neighbors(
         })
         // can't take more than max_steps steps in the same direction
         .filter(move |neighbor| neighbor.steps <= max_steps)
-}
-
-fn build_graph(input: &Grid<u8>, min_steps: u8, max_steps: u8) -> GraphMap<NodeId, u32, Directed> {
-    let mut graph = GraphMap::new();
-    let start = NodeId::new(0, 0, 0, Direction::None);
-
-    for id in all_nodes_iter(input.cols(), input.rows(), max_steps) {
-        graph.add_node(id);
-    }
-    // starting node, which has weird properties
-    graph.add_node(start);
-
-    for id in all_nodes_iter(input.cols(), input.rows(), max_steps) {
-        for neighbor in node_neighbors(id, input.rows(), input.cols(), min_steps, max_steps) {
-            graph.add_edge(
-                id,
-                neighbor,
-                *input.get(neighbor.y as usize, neighbor.x as usize).unwrap() as u32,
-            );
-        }
-    }
-    for neighbor in node_neighbors(start, input.rows(), input.cols(), min_steps, max_steps) {
-        graph.add_edge(
-            start,
-            neighbor,
-            *input.get(neighbor.y as usize, neighbor.x as usize).unwrap() as u32,
-        );
-    }
-
-    return graph;
 }
