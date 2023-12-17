@@ -223,6 +223,13 @@ fn crucible_walk(problem: &Problem) -> u32 {
             problem.index_to_node(cur_id)
         };
 
+        if cur.x as usize == problem.grid.cols() - 1
+            && cur.y as usize == problem.grid.rows() - 1
+            && cur.steps >= problem.min_steps
+        {
+            return cur_cost;
+        }
+
         let neighbors = node_neighbors(
             cur,
             problem.grid.rows(),
@@ -242,17 +249,7 @@ fn crucible_walk(problem: &Problem) -> u32 {
         }
     }
 
-    all_dirsteps_iter(
-        problem.grid.cols() - 1,
-        problem.grid.rows() - 1,
-        problem.min_steps,
-        problem.max_steps,
-    )
-    .map(|id| problem.node_to_index(&id))
-    .map(|idx| costs[idx as usize])
-    .filter(|&cost| cost != 0)
-    .min()
-    .unwrap()
+    unreachable!();
 }
 
 fn parse_input(input: &str) -> Grid<u8> {
@@ -266,19 +263,6 @@ fn parse_input(input: &str) -> Grid<u8> {
         }
     }
     grid
-}
-
-fn all_dirsteps_iter(
-    x: usize,
-    y: usize,
-    min_steps: u8,
-    max_steps: u8,
-) -> impl Iterator<Item = NodeId> {
-    (min_steps..=max_steps).flat_map(move |steps| {
-        DIRECTIONS
-            .iter()
-            .map(move |&dir| NodeId::new(x as u16, y as u16, steps, dir))
-    })
 }
 
 fn directed_steps(steps: u8, prev_dir: Direction, new_dir: Direction) -> u8 {
