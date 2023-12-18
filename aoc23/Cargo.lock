@@ -86,6 +86,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "aoc23_18"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "itertools",
+ "nom",
+ "rayon",
+]
+
+[[package]]
 name = "aoc23_2"
 version = "0.1.0"
 dependencies = [
