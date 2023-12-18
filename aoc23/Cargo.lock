@@ -30,6 +30,7 @@ name = "aoc23_10"
 version = "0.1.0"
 dependencies = [
  "derive_more",
+ "itertools",
 ]
 
 [[package]]

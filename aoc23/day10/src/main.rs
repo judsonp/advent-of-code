@@ -1,5 +1,6 @@
 use derive_more::Constructor;
-use std::collections::{HashMap, HashSet};
+use itertools::Itertools;
+use std::collections::HashMap;
 use std::fs;
 
 #[derive(Constructor, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Copy)]
@@ -17,87 +18,34 @@ struct Graph {
 fn main() {
     let input_s = fs::read_to_string("inputs/day10.txt").unwrap();
     let input = parse_input(&input_s);
-    println!("Part one: {}", part_one(&input));
-    println!("Part two: {}", part_two(&input));
+    let cage = find_loop(&input);
+    println!("Part one: {}", part_one(&cage));
+    println!("Part two: {}", part_two(&cage));
 }
 
-fn part_one(input: &Graph) -> u32 {
-    let start = input.start;
-    let mut steps: u32 = 1;
-    let mut cur = input.graph.get(&start).unwrap()[0];
-    let mut last = start;
-
-    while cur != start {
-        let next = input
-            .graph
-            .get(&cur)
-            .unwrap()
-            .iter()
-            .find(|n| **n != last)
-            .unwrap();
-        last = cur;
-        cur = *next;
-        steps += 1;
-    }
-
-    steps / 2
+fn part_one(cage: &Vec<Point>) -> u32 {
+    cage.len() as u32 / 2
 }
 
-fn part_two(input: &Graph) -> u32 {
-    let cage = find_loop(input);
-
-    let max_x = input.graph.keys().map(|p| p.x).max().unwrap();
-    let max_y = input.graph.keys().map(|p| p.y).max().unwrap();
-
-    let mut inside_cage: u32 = 0;
-
-    for x in 0..=max_x {
-        for y in 0..=max_y {
-            if is_inside_cage(&Point::new(x, y), &cage, input) {
-                inside_cage += 1;
-            }
-        }
-    }
-
-    inside_cage
+fn part_two(cage: &Vec<Point>) -> u32 {
+    // Pick's theorem: area = interior + (boundary / 2) - 1
+    // interior = area - (boundary / 2) + 1
+    let area = polygon_area(cage);
+    let peri = cage.len() as u32;
+    area - (peri / 2) + 1
 }
 
-fn is_inside_cage(point: &Point, cage: &HashSet<Point>, input: &Graph) -> bool {
-    if cage.contains(point) {
-        return false;
-    }
-    let cage_points_on_downright_diag = cage
-        .iter()
-        .filter(|p| p.x > point.x && (p.x - point.x == p.y - point.y));
-    let ignoring_bad_corners = cage_points_on_downright_diag
-        .filter(|p| !is_tangent_diagonal(p, input.graph.get(p).unwrap()));
-    let crossings = ignoring_bad_corners.count();
-    crossings % 2 == 1
-}
-
-fn is_tangent_diagonal(p: &Point, adj: &[Point; 2]) -> bool {
-    // 7 and L are ignorable
-    // This isn't general, but it's the way we constructed 7 and L
-    if adj[0] == Point::new(p.x, p.y - 1) && adj[1] == Point::new(p.x + 1, p.y) {
-        return true;
-    }
-    if adj[0] == Point::new(p.x, p.y + 1) && adj[1] == Point::new(p.x - 1, p.y) {
-        return true;
-    }
-    false
-}
-
-fn find_loop(input: &Graph) -> HashSet<Point> {
-    let mut cage: HashSet<Point> = HashSet::new();
+fn find_loop(input: &Graph) -> Vec<Point> {
+    let mut cage = Vec::new();
 
     let start = input.start;
     let mut cur = input.graph.get(&start).unwrap()[0];
     let mut last = start;
 
-    cage.insert(start);
+    cage.push(start);
 
     while cur != start {
-        cage.insert(cur);
+        cage.push(cur);
         let next = input
             .graph
             .get(&cur)
@@ -108,8 +56,20 @@ fn find_loop(input: &Graph) -> HashSet<Point> {
         last = cur;
         cur = *next;
     }
+
+    cage.push(cur);
 
     cage
+}
+
+fn polygon_area(points: &Vec<Point>) -> u32 {
+    points
+        .iter()
+        .tuple_windows()
+        .map(|(p1, p2)| p1.x * p2.y - p2.x * p1.y)
+        .sum::<i32>()
+        .abs() as u32
+        / 2
 }
 
 fn parse_input(input: &str) -> Graph {
