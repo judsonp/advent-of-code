@@ -54,8 +54,8 @@ fn main() {
     let input = fs::read_to_string("inputs/day3.txt").unwrap();
     let (numbers, symbols) = parse_input(&input);
 
-    println!("Part 1: {}", part_one(&numbers, &symbols));
-    println!("Part 2: {}", part_two(&numbers, &symbols));
+    println!("Part one: {}", part_one(&numbers, &symbols));
+    println!("Part two: {}", part_two(&numbers, &symbols));
 }
 
 fn parse_input(input: &str) -> (Vec<Number>, Vec<Symbol>) {
