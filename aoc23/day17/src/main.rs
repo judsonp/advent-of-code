@@ -1,5 +1,5 @@
 use grid::Grid;
-use std::{array, fs};
+use std::fs;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 enum Direction {
@@ -89,20 +89,20 @@ impl NodeId {
     }
 }
 
-const MAX_PRIORITY_SKEW: u32 = 10;
-
-struct LimitedPriorityQueue {
+struct LimitedPriorityQueue<T> {
     size: usize,
-    base_priority: u32,
-    queues: [Vec<u32>; MAX_PRIORITY_SKEW as usize],
+    base_priority: usize,
+    max_priority_skew: usize,
+    queues: Vec<Vec<T>>,
 }
 
-impl LimitedPriorityQueue {
-    fn new() -> Self {
+impl<T> LimitedPriorityQueue<T> {
+    fn new(max_priority_skew: usize) -> Self {
         Self {
             size: 0,
             base_priority: 0,
-            queues: array::from_fn(|_| Vec::new()),
+            max_priority_skew,
+            queues: (0..max_priority_skew).map(|_| Vec::new()).collect(),
         }
     }
 
@@ -110,29 +110,29 @@ impl LimitedPriorityQueue {
         self.size == 0
     }
 
-    fn push(&mut self, id: u32, priority: u32) {
+    fn push(&mut self, id: T, priority: usize) {
         let mut adjusted_priority = priority - self.base_priority;
 
-        if adjusted_priority >= MAX_PRIORITY_SKEW {
-            let shift = adjusted_priority - MAX_PRIORITY_SKEW + 1;
+        if adjusted_priority >= self.max_priority_skew {
+            let shift = adjusted_priority - self.max_priority_skew + 1;
             for i in 0..shift {
-                assert!(self.queues[i as usize].is_empty());
+                assert!(self.queues[i].is_empty());
             }
-            self.queues.rotate_left(shift as usize);
+            self.queues.rotate_left(shift);
             adjusted_priority -= shift;
             self.base_priority += shift;
         }
 
-        self.queues[adjusted_priority as usize].push(id);
+        self.queues[adjusted_priority].push(id);
         self.size += 1;
     }
 
-    fn pop(&mut self) -> (u32, u32) {
+    fn pop(&mut self) -> (T, usize) {
         assert!(self.size > 0);
         for i in 0..self.queues.len() {
             if !self.queues[i].is_empty() {
                 let id = self.queues[i].pop().unwrap();
-                let priority = self.base_priority + i as u32;
+                let priority = self.base_priority + i;
                 self.size -= 1;
                 return (id, priority);
             }
@@ -200,7 +200,7 @@ fn crucible_walk(problem: &Problem) -> u32 {
     let start_sentinel = u32::MAX;
 
     let mut costs = vec![0; problem.max_index() as usize];
-    let mut queue = LimitedPriorityQueue::new();
+    let mut queue = LimitedPriorityQueue::new(10);
 
     queue.push(start_sentinel, 0);
 
@@ -227,7 +227,7 @@ fn crucible_walk(problem: &Problem) -> u32 {
             && cur.y as usize == problem.grid.rows() - 1
             && cur.steps >= problem.min_steps
         {
-            return cur_cost;
+            return cur_cost as u32;
         }
 
         let neighbors = node_neighbors(
@@ -244,7 +244,7 @@ fn crucible_walk(problem: &Problem) -> u32 {
                 + *problem
                     .grid
                     .get(neighbor.y as usize, neighbor.x as usize)
-                    .unwrap() as u32;
+                    .unwrap() as usize;
             queue.push(neighbor_id, neighbor_cost);
         }
     }
