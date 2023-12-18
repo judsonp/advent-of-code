@@ -59,10 +59,16 @@ impl TryFrom<char> for Direction {
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
         match value {
+            // Part 1
             'L' => Ok(Direction::Left),
             'R' => Ok(Direction::Right),
             'U' => Ok(Direction::Up),
             'D' => Ok(Direction::Down),
+            // Part 2
+            '0' => Ok(Direction::Right),
+            '1' => Ok(Direction::Down),
+            '2' => Ok(Direction::Left),
+            '3' => Ok(Direction::Up),
             _ => Err(anyhow!("Invalid direction: {}", value)),
         }
     }
@@ -87,11 +93,11 @@ where
 struct Instruction {
     distance: i64,
     direction: Direction,
-    color: String,
 }
 
 struct Input {
     instructions: Vec<Instruction>,
+    alternate_instructions: Vec<Instruction>,
 }
 
 struct Polygon {
@@ -124,19 +130,25 @@ impl Polygon {
 fn main() {
     let input_s = fs::read_to_string("inputs/day18.txt").unwrap();
     let (_, input) = parse_input(&input_s).unwrap();
-    println!("Part 1: {}", part_one(&input));
+    println!("Part one: {}", part_one(&input));
+    println!("Part two: {}", part_two(&input));
 }
 
 fn part_one(input: &Input) -> i64 {
-    let polygon = follow_instructions(input);
+    let polygon = follow_instructions(&input.instructions);
     polygon.area() + (polygon.perimeter() / 2) + 1
 }
 
-fn follow_instructions(input: &Input) -> Polygon {
+fn part_two(input: &Input) -> i64 {
+    let polygon = follow_instructions(&input.alternate_instructions);
+    polygon.area() + (polygon.perimeter() / 2) + 1
+}
+
+fn follow_instructions(instructions: &[Instruction]) -> Polygon {
     let mut points = Vec::new();
     let mut cur = Point::new(0, 0);
     points.push(cur);
-    for instruction in &input.instructions {
+    for instruction in instructions {
         cur = cur + instruction.direction * instruction.distance;
         points.push(cur);
     }
@@ -149,25 +161,40 @@ fn parse_input(input: &str) -> IResult<&str, Input> {
             separated_list1(line_ending, parse_instruction),
             opt(line_ending),
         ),
-        |instructions| Input { instructions },
+        |instruction_pairs| {
+            let (instructions, alternate_instructions) = instruction_pairs.into_iter().unzip();
+            Input {
+                instructions,
+                alternate_instructions,
+            }
+        },
     )(input)
 }
 
-fn parse_instruction(input: &str) -> IResult<&str, Instruction> {
+fn parse_instruction(input: &str) -> IResult<&str, (Instruction, Instruction)> {
     map(
         tuple((
             terminated(alpha1, space1),
             terminated(nom_i64, space1),
             delimited(tag("(#"), hex_digit1, tag(")")),
         )),
-        |(d, a, c)| to_instruction(d, a, c),
+        |(d, a, c)| (to_instruction(d, a), to_alternate_instruction(c)),
     )(input)
 }
 
-fn to_instruction(dir: &str, dist: i64, col: &str) -> Instruction {
+fn to_instruction(dir: &str, dist: i64) -> Instruction {
     Instruction {
         direction: dir.chars().next().unwrap().try_into().unwrap(),
         distance: dist,
-        color: col.to_owned(),
+    }
+}
+
+fn to_alternate_instruction(hex: &str) -> Instruction {
+    let (dist, dir) = hex.split_at(5);
+    let distance = i64::from_str_radix(dist, 16).unwrap();
+    let direction = dir.chars().next().unwrap().try_into().unwrap();
+    Instruction {
+        direction,
+        distance,
     }
 }
