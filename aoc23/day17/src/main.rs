@@ -10,8 +10,8 @@ enum Direction {
     Right,
 }
 
-impl From<u32> for Direction {
-    fn from(value: u32) -> Self {
+impl From<usize> for Direction {
+    fn from(value: usize) -> Self {
         match value {
             0 => Direction::Up,
             1 => Direction::Down,
@@ -22,7 +22,7 @@ impl From<u32> for Direction {
     }
 }
 
-impl From<Direction> for u32 {
+impl From<Direction> for usize {
     fn from(value: Direction) -> Self {
         match value {
             Direction::Up => 0,
@@ -43,14 +43,14 @@ const DIRECTIONS: [Direction; 4] = [
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 struct NodeId {
-    x: u16,
-    y: u16,
-    steps: u8,
+    x: usize,
+    y: usize,
+    steps: usize,
     direction: Direction,
 }
 
 impl NodeId {
-    fn new(x: u16, y: u16, steps: u8, direction: Direction) -> Self {
+    fn new(x: usize, y: usize, steps: usize, direction: Direction) -> Self {
         Self {
             x,
             y,
@@ -59,31 +59,31 @@ impl NodeId {
         }
     }
 
-    fn to_index(self, _max_x: u16, max_y: u16, max_steps: u8) -> u32 {
+    fn to_index(self, _max_x: usize, max_y: usize, max_steps: usize) -> usize {
         // note: max x/y is exclusive, max steps is inclusive
         // note: steps = 0 is not a supported state
         assert!(self.steps != 0);
         assert!(self.direction != Direction::None);
-        let mut id = self.x as u32;
-        id = (id * max_y as u32) + self.y as u32;
-        id = (id * max_steps as u32) + (self.steps as u32 - 1);
-        id = (id * 4) + <Direction as Into<u32>>::into(self.direction);
+        let mut id = self.x;
+        id = (id * max_y) + self.y;
+        id = (id * max_steps) + (self.steps - 1);
+        id = (id * 4) + <Direction as Into<usize>>::into(self.direction);
         id
     }
 
-    fn from_index(id: u32, _max_x: u16, max_y: u16, max_steps: u8) -> Self {
+    fn from_index(id: usize, _max_x: usize, max_y: usize, max_steps: usize) -> Self {
         let mut rem = id;
         let dir_no = rem % 4;
         rem /= 4;
-        let steps = (rem % max_steps as u32) + 1;
-        rem /= max_steps as u32;
-        let y = rem % max_y as u32;
-        rem /= max_y as u32;
+        let steps = (rem % max_steps) + 1;
+        rem /= max_steps;
+        let y = rem % max_y;
+        rem /= max_y;
         let x = rem;
         Self {
-            x: x as u16,
-            y: y as u16,
-            steps: steps as u8,
+            x,
+            y,
+            steps,
             direction: dir_no.into(),
         }
     }
@@ -142,31 +142,22 @@ impl<T> LimitedPriorityQueue<T> {
 }
 
 struct Problem<'a> {
-    grid: &'a Grid<u8>,
-    min_steps: u8,
-    max_steps: u8,
+    grid: &'a Grid<usize>,
+    min_steps: usize,
+    max_steps: usize,
 }
 
 impl Problem<'_> {
-    fn node_to_index(&self, node: &NodeId) -> u32 {
-        node.to_index(
-            self.grid.cols() as u16,
-            self.grid.rows() as u16,
-            self.max_steps,
-        )
+    fn node_to_index(&self, node: &NodeId) -> usize {
+        node.to_index(self.grid.cols(), self.grid.rows(), self.max_steps)
     }
 
-    fn index_to_node(&self, id: u32) -> NodeId {
-        NodeId::from_index(
-            id,
-            self.grid.cols() as u16,
-            self.grid.rows() as u16,
-            self.max_steps,
-        )
+    fn index_to_node(&self, id: usize) -> NodeId {
+        NodeId::from_index(id, self.grid.cols(), self.grid.rows(), self.max_steps)
     }
 
-    fn max_index(&self) -> u32 {
-        (self.grid.cols() * self.grid.rows() * (self.max_steps as usize) * 4) as u32
+    fn max_index(&self) -> usize {
+        self.grid.cols() * self.grid.rows() * self.max_steps * 4
     }
 }
 
@@ -177,7 +168,7 @@ fn main() {
     println!("Part two: {}", part_two(&input));
 }
 
-fn part_one(input: &Grid<u8>) -> u32 {
+fn part_one(input: &Grid<usize>) -> usize {
     let problem = Problem {
         grid: input,
         min_steps: 1,
@@ -186,7 +177,7 @@ fn part_one(input: &Grid<u8>) -> u32 {
     crucible_walk(&problem)
 }
 
-fn part_two(input: &Grid<u8>) -> u32 {
+fn part_two(input: &Grid<usize>) -> usize {
     let problem = Problem {
         grid: input,
         min_steps: 4,
@@ -195,11 +186,11 @@ fn part_two(input: &Grid<u8>) -> u32 {
     crucible_walk(&problem)
 }
 
-fn crucible_walk(problem: &Problem) -> u32 {
+fn crucible_walk(problem: &Problem) -> usize {
     let start = NodeId::new(0, 0, 0, Direction::None);
-    let start_sentinel = u32::MAX;
+    let start_sentinel = usize::MAX;
 
-    let mut costs = vec![0; problem.max_index() as usize];
+    let mut costs = vec![0; problem.max_index()];
     let mut queue = LimitedPriorityQueue::new(10);
 
     queue.push(start_sentinel, 0);
@@ -208,13 +199,13 @@ fn crucible_walk(problem: &Problem) -> u32 {
         let (cur_id, cur_cost) = queue.pop();
 
         // skip already-marked nodes
-        if cur_id != start_sentinel && costs[cur_id as usize] != 0 {
+        if cur_id != start_sentinel && costs[cur_id] != 0 {
             continue;
         }
 
         // mark this node
         if cur_id != start_sentinel {
-            costs[cur_id as usize] = cur_cost;
+            costs[cur_id] = cur_cost;
         }
 
         let cur = if cur_id == start_sentinel {
@@ -223,11 +214,11 @@ fn crucible_walk(problem: &Problem) -> u32 {
             problem.index_to_node(cur_id)
         };
 
-        if cur.x as usize == problem.grid.cols() - 1
-            && cur.y as usize == problem.grid.rows() - 1
+        if cur.x == problem.grid.cols() - 1
+            && cur.y == problem.grid.rows() - 1
             && cur.steps >= problem.min_steps
         {
-            return cur_cost as u32;
+            return cur_cost;
         }
 
         let neighbors = node_neighbors(
@@ -240,11 +231,7 @@ fn crucible_walk(problem: &Problem) -> u32 {
 
         for neighbor in neighbors {
             let neighbor_id = problem.node_to_index(&neighbor);
-            let neighbor_cost = cur_cost
-                + *problem
-                    .grid
-                    .get(neighbor.y as usize, neighbor.x as usize)
-                    .unwrap() as usize;
+            let neighbor_cost = cur_cost + *problem.grid.get(neighbor.y, neighbor.x).unwrap();
             queue.push(neighbor_id, neighbor_cost);
         }
     }
@@ -252,20 +239,20 @@ fn crucible_walk(problem: &Problem) -> u32 {
     unreachable!();
 }
 
-fn parse_input(input: &str) -> Grid<u8> {
+fn parse_input(input: &str) -> Grid<usize> {
     let input = input.trim();
     let height = input.split('\n').count();
     let width = input.split('\n').next().unwrap().len();
     let mut grid = Grid::init(height, width, 0);
     for (y, line) in input.split('\n').enumerate() {
         for (x, value) in line.chars().enumerate() {
-            *grid.get_mut(y, x).unwrap() = value.to_digit(10).unwrap() as u8;
+            *grid.get_mut(y, x).unwrap() = value.to_digit(10).unwrap() as usize;
         }
     }
     grid
 }
 
-fn directed_steps(steps: u8, prev_dir: Direction, new_dir: Direction) -> u8 {
+fn directed_steps(steps: usize, prev_dir: Direction, new_dir: Direction) -> usize {
     if prev_dir == new_dir {
         steps + 1
     } else {
@@ -277,11 +264,11 @@ fn add_direction(id: NodeId, dir: Direction, rows: usize, cols: usize) -> Option
     let pos = match dir {
         Direction::Up if id.y == 0 => None,
         Direction::Up => Some((id.x, id.y - 1)),
-        Direction::Down if id.y == (rows as u16) - 1 => None,
+        Direction::Down if id.y == rows - 1 => None,
         Direction::Down => Some((id.x, id.y + 1)),
         Direction::Left if id.x == 0 => None,
         Direction::Left => Some((id.x - 1, id.y)),
-        Direction::Right if id.x == (cols as u16) - 1 => None,
+        Direction::Right if id.x == cols - 1 => None,
         Direction::Right => Some((id.x + 1, id.y)),
         Direction::None => unreachable!(),
     };
@@ -302,8 +289,8 @@ fn node_neighbors(
     id: NodeId,
     rows: usize,
     cols: usize,
-    min_steps: u8,
-    max_steps: u8,
+    min_steps: usize,
+    max_steps: usize,
 ) -> impl Iterator<Item = NodeId> {
     DIRECTIONS
         .iter()
