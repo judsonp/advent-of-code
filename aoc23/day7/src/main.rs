@@ -9,7 +9,7 @@ fn card_value(value: char) -> Result<u8> {
         'A' => 14,
         'K' => 13,
         'Q' => 12,
-        'J' => 0,
+        'J' => 11,
         'T' => 10,
         _ => value
             .to_digit(10)
@@ -17,7 +17,7 @@ fn card_value(value: char) -> Result<u8> {
     })
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Hand {
     hand: [u8; 5],
     bid: i64,
@@ -100,10 +100,26 @@ impl Ord for EvaluatedHand<'_> {
 fn main() {
     let input_s = fs::read_to_string("inputs/day7.txt").unwrap();
     let input = parse_input(&input_s).unwrap();
+    println!("Part one: {}", part_one(&input));
     println!("Part two: {}", part_two(input));
 }
 
-fn part_two(input: Vec<Hand>) -> i64 {
+fn part_one(input: &Vec<Hand>) -> i64 {
+    score(input)
+}
+
+fn part_two(mut input: Vec<Hand>) -> i64 {
+    for hand in &mut input {
+        for card in &mut hand.hand {
+            if *card == 11 {
+                *card = 0;
+            }
+        }
+    }
+    score(&input)
+}
+
+fn score(input: &Vec<Hand>) -> i64 {
     let mut hands: Vec<EvaluatedHand> = input.iter().map(|h| EvaluatedHand::evaluate(h)).collect();
     hands.sort();
     hands
