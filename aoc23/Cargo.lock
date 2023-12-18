@@ -92,7 +92,6 @@ dependencies = [
  "anyhow",
  "itertools",
  "nom",
- "rayon",
 ]
 
 [[package]]
