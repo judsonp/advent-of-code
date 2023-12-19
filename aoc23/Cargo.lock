@@ -96,6 +96,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "aoc23_19"
+version = "0.1.0"
+dependencies = [
+ "enum-map",
+ "nom",
+]
+
+[[package]]
 name = "aoc23_2"
 version = "0.1.0"
 dependencies = [
