@@ -8,7 +8,7 @@ use nom::{
     sequence::{delimited, separated_pair, terminated, tuple},
     IResult,
 };
-use std::{collections::HashMap, fs};
+use std::{collections::HashMap, fs, ops::Range};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Target {
@@ -63,6 +63,21 @@ impl Comparator {
             Comparator::Greater => lhs > rhs,
         }
     }
+
+    fn split(&self, range: Range<u16>, quantity: u16) -> (Range<u16>, Range<u16>) {
+        match self {
+            Comparator::Less => {
+                let selected = range.start..quantity;
+                let remaining = quantity..range.end;
+                (selected, remaining)
+            }
+            Comparator::Greater => {
+                let selected = quantity + 1..range.end;
+                let remaining = range.start..quantity + 1;
+                (selected, remaining)
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -88,6 +103,31 @@ impl Part {
     }
 }
 
+#[derive(Debug, Clone)]
+struct PartBin {
+    properties: EnumMap<Property, Range<u16>>,
+}
+
+impl PartBin {
+    fn split(&mut self, condition: &Condition) -> PartBin {
+        let (split_range, remaining_range) = condition.comparator.split(
+            self.properties[condition.property].clone(),
+            condition.quantity,
+        );
+        let mut s = self.clone();
+        self.properties[condition.property] = remaining_range;
+        s.properties[condition.property] = split_range;
+        s
+    }
+
+    fn score(&self) -> u64 {
+        self.properties
+            .values()
+            .map(|v| (v.end - v.start) as u64)
+            .product()
+    }
+}
+
 #[derive(Debug)]
 struct Input {
     workflows: HashMap<String, Workflow>,
@@ -98,7 +138,7 @@ fn main() {
     let input_s = fs::read_to_string("inputs/day19.txt").unwrap();
     let (_, input) = parse_input(&input_s).unwrap();
     println!("Part one: {}", part_one(&input));
-    // println!("Part two: {}", part_two(&input));
+    println!("Part two: {}", part_two(&input.workflows));
 }
 
 fn part_one(input: &Input) -> u64 {
@@ -108,6 +148,50 @@ fn part_one(input: &Input) -> u64 {
         .filter(|part| destination(&input.workflows, part) == &Target::Accept)
         .map(|part| part.score())
         .sum::<u64>()
+}
+
+fn part_two(workflows: &HashMap<String, Workflow>) -> u64 {
+    let initial = PartBin {
+        properties: EnumMap::from_fn(|_| 1..4001),
+    };
+
+    let accepted = apply_ranged_workflow(workflows, "in", &initial);
+
+    accepted.iter().map(|bin| bin.score()).sum::<u64>()
+}
+
+fn apply_ranged_workflow(
+    workflows: &HashMap<String, Workflow>,
+    workflow_name: &str,
+    bin: &PartBin,
+) -> Vec<PartBin> {
+    let workflow = workflows.get(workflow_name).unwrap();
+    let mut accepted = Vec::new();
+
+    let mut remaining = bin.clone();
+
+    for (maybe_condition, target) in &workflow.rules {
+        if let Some(condition) = maybe_condition {
+            let affected = remaining.split(condition);
+            match target {
+                Target::Accept => accepted.push(affected),
+                Target::Reject => {}
+                Target::Workflow { workflow } => {
+                    accepted.append(&mut apply_ranged_workflow(workflows, workflow, &affected));
+                }
+            };
+        } else {
+            match target {
+                Target::Accept => accepted.push(remaining.clone()),
+                Target::Reject => {}
+                Target::Workflow { workflow } => {
+                    accepted.append(&mut apply_ranged_workflow(workflows, workflow, &remaining));
+                }
+            };
+        }
+    }
+
+    accepted
 }
 
 fn destination<'a>(workflows: &'a HashMap<String, Workflow>, part: &Part) -> &'a Target {
