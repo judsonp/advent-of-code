@@ -1,3 +1,5 @@
+use anyhow::Result;
+use clap::Parser;
 use halfbrown::HashMap;
 use nom::{
     branch::alt,
@@ -8,7 +10,20 @@ use nom::{
     sequence::{preceded, separated_pair, terminated},
     IResult,
 };
-use std::{collections::VecDeque, fs};
+use std::{
+    collections::{HashSet, VecDeque},
+    fs,
+    fs::File,
+    io::{BufWriter, Write},
+    path::Path,
+};
+
+#[derive(Debug, Parser)]
+#[command(about)]
+struct Args {
+    #[arg(short, long)]
+    output_dotfile: Option<String>,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Voltage {
@@ -39,6 +54,10 @@ enum Component {
         inputs: HashMap<String, Voltage>,
         outputs: Vec<String>,
     },
+    Output {
+        name: String,
+        outputs: Vec<String>,
+    },
 }
 
 impl Component {
@@ -47,6 +66,7 @@ impl Component {
             Component::Broadcast { outputs, .. } => outputs,
             Component::FlipFlop { outputs, .. } => outputs,
             Component::Conjunction { outputs, .. } => outputs,
+            Component::Output { outputs, .. } => outputs,
         }
     }
 
@@ -55,6 +75,7 @@ impl Component {
             Component::Broadcast { name, .. } => name,
             Component::FlipFlop { name, .. } => name,
             Component::Conjunction { name, .. } => name,
+            Component::Output { name, .. } => name,
         }
     }
 
@@ -104,6 +125,7 @@ impl Component {
                     })
                     .collect::<Vec<_>>();
             }
+            Component::Output { .. } => Vec::new(),
         }
     }
 }
@@ -111,19 +133,33 @@ impl Component {
 type Input = HashMap<String, Component>;
 
 fn main() {
+    let args = Args::parse();
+
     let input_s = fs::read_to_string("inputs/day20.txt").unwrap();
     let (_, mut input) = parse_input(&input_s).unwrap();
-    // TODO better hack
-    input.insert(
-        "rx".to_owned(),
-        Component::Conjunction {
-            name: "rx".to_owned(),
-            inputs: HashMap::new(),
-            outputs: Vec::new(),
-        },
-    );
+
+    create_outputs(&mut input);
     wire_conjunctions(&mut input);
+
+    if let Some(filename) = args.output_dotfile {
+        write_dotfile(&filename, &input).expect("writing dotfile failed");
+        println!("Wrote dotfile to {}", filename);
+    }
+
     println!("Part one: {}", part_one(input));
+}
+
+fn write_dotfile(filename: &str, input: &Input) -> Result<()> {
+    let path = Path::new(filename);
+    let mut file = BufWriter::new(File::create(path)?);
+    file.write_all("digraph Circuit {\n".as_bytes())?;
+    for (src, component) in input {
+        for dst in component.outputs() {
+            file.write_all(format!("  {} -> {}\n", src, dst).as_bytes())?;
+        }
+    }
+    file.write_all("}\n".as_bytes())?;
+    Ok(())
 }
 
 fn part_one(mut components: Input) -> u64 {
@@ -167,6 +203,25 @@ fn execute_counting(components: &mut Input) -> (u64, u64) {
     }
 
     (count_high, count_low)
+}
+
+fn create_outputs(input: &mut Input) {
+    let outputs = input
+        .iter()
+        .flat_map(|(_, comp)| comp.outputs().iter())
+        .map(|s| s.to_owned())
+        .collect::<HashSet<_>>();
+    for output in outputs {
+        if input.get(&output).is_none() {
+            input.insert(
+                output.clone(),
+                Component::Output {
+                    name: output.clone(),
+                    outputs: Vec::new(),
+                },
+            );
+        }
+    }
 }
 
 fn wire_conjunctions(input: &mut Input) {
