@@ -1,0 +1,170 @@
+digraph Circuit {
+  tx [shape=box]
+  fm [shape=box]
+  fq [shape=box]
+  hn [shape=box]
+  mj [shape=box]
+  vq [shape=box]
+  xb [shape=box]
+  cm [shape=box]
+  rz [shape=oval]
+  fl [shape=box]
+  sf [shape=box]
+  sx [shape=box]
+  kz [shape=box]
+  np [shape=box]
+  nn [shape=box]
+  hf [shape=box]
+  dn [shape=box]
+  xp [shape=box]
+  hh [shape=box]
+  pn [shape=oval]
+  mh [shape=box]
+  fk [shape=oval]
+  ds [shape=box]
+  qn [shape=box]
+  qz [shape=box]
+  br [shape=oval]
+  cr [shape=box]
+  hq [shape=box]
+  fn [shape=box]
+  zb [shape=box]
+  rx [shape=diamond]
+  zc [shape=box]
+  rq [shape=box]
+  vd [shape=oval]
+  nc [shape=box]
+  bt [shape=box]
+  dq [shape=box]
+  vf [shape=box]
+  gz [shape=box]
+  nm [shape=box]
+  xd [shape=box]
+  bh [shape=box]
+  ms [shape=box]
+  th [shape=oval]
+  dj [shape=box]
+  mq [shape=box]
+  tp [shape=box]
+  kb [shape=box]
+  vx [shape=box]
+  jd [shape=box]
+  lz [shape=box]
+  broadcaster [shape=diamond]
+  lf [shape=oval]
+  fz [shape=oval]
+  lb [shape=oval]
+  xn [shape=box]
+  xv [shape=box]
+  qk [shape=box]
+  gp [shape=box]
+  tx -> fz
+  tx -> qn
+  fm -> hh
+  fm -> th
+  fq -> xd
+  hn -> xn
+  hn -> fz
+  mj -> th
+  mj -> np
+  vq -> qz
+  vq -> pn
+  xb -> th
+  cm -> fm
+  rz -> lb
+  fl -> fz
+  fl -> rq
+  sf -> vd
+  sf -> xv
+  sx -> th
+  sx -> xb
+  kz -> pn
+  np -> fq
+  nn -> vd
+  nn -> zc
+  hf -> qk
+  dn -> nm
+  dn -> fz
+  xp -> pn
+  xp -> mq
+  hh -> th
+  hh -> dq
+  pn -> lz
+  pn -> hq
+  pn -> lf
+  pn -> mh
+  pn -> bh
+  pn -> mq
+  mh -> xp
+  fk -> lb
+  ds -> kz
+  ds -> pn
+  qn -> fz
+  qn -> bt
+  qz -> bh
+  qz -> pn
+  br -> lb
+  cr -> fl
+  cr -> fz
+  hq -> mh
+  fn -> fz
+  zb -> gz
+  zc -> ms
+  rq -> fn
+  rq -> fz
+  vd -> zc
+  vd -> nn
+  vd -> hf
+  vd -> br
+  vd -> zb
+  vd -> tp
+  vd -> gz
+  nc -> sf
+  nc -> vd
+  bt -> fz
+  bt -> dn
+  dq -> dj
+  dq -> th
+  vf -> nc
+  vf -> vd
+  gz -> vf
+  nm -> hn
+  xd -> th
+  xd -> gp
+  bh -> hq
+  ms -> tp
+  ms -> vd
+  th -> mj
+  th -> rz
+  th -> np
+  th -> fq
+  th -> cm
+  dj -> th
+  dj -> sx
+  mq -> jd
+  tp -> hf
+  kb -> cr
+  kb -> fz
+  vx -> pn
+  vx -> ds
+  jd -> pn
+  jd -> vx
+  lz -> vq
+  lz -> pn
+  broadcaster -> nn
+  broadcaster -> lz
+  broadcaster -> mj
+  broadcaster -> tx
+  lf -> lb
+  fz -> fk
+  fz -> nm
+  fz -> tx
+  lb -> rx
+  xn -> fz
+  xn -> kb
+  xv -> vd
+  qk -> vd
+  qk -> zb
+  gp -> cm
+  gp -> th
+}

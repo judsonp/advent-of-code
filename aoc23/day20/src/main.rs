@@ -10,6 +10,7 @@ use nom::{
     sequence::{preceded, separated_pair, terminated},
     IResult,
 };
+use num::integer::lcm;
 use std::{
     collections::{HashSet, VecDeque},
     fs,
@@ -146,7 +147,8 @@ fn main() {
         println!("Wrote dotfile to {}", filename);
     }
 
-    println!("Part one: {}", part_one(input));
+    println!("Part one: {}", part_one(input.clone()));
+    println!("Part two: {}", part_two(input));
 }
 
 fn write_dotfile(filename: &str, input: &Input) -> Result<()> {
@@ -154,12 +156,62 @@ fn write_dotfile(filename: &str, input: &Input) -> Result<()> {
     let mut file = BufWriter::new(File::create(path)?);
     file.write_all("digraph Circuit {\n".as_bytes())?;
     for (src, component) in input {
+        let shape = match component {
+            Component::Broadcast { .. } => "diamond",
+            Component::FlipFlop { .. } => "box",
+            Component::Conjunction { .. } => "oval",
+            Component::Output { .. } => "diamond",
+        };
+        file.write_all(format!("  {} [shape={}]\n", src, shape).as_bytes())?;
+    }
+    for (src, component) in input {
         for dst in component.outputs() {
             file.write_all(format!("  {} -> {}\n", src, dst).as_bytes())?;
         }
     }
     file.write_all("}\n".as_bytes())?;
     Ok(())
+}
+
+fn part_two(mut components: Input) -> u64 {
+    // Wired to this particular input:
+    // There is exactly one output node.
+    let output_node_name = components
+        .iter()
+        .find_map(|(_, component)| match component {
+            Component::Output { name, .. } => Some(name.to_owned()),
+            _ => None,
+        })
+        .unwrap();
+
+    // The output node is fed by a single combiner, whose only output is to the output node.
+    let combiner_node_name = components
+        .iter()
+        .find_map(|(name, component)| {
+            if component.outputs().contains(&output_node_name) {
+                Some(name.to_owned())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+
+    let Component::Conjunction {
+        inputs: combiner_node_inputs,
+        ..
+    } = components.get(&combiner_node_name).unwrap()
+    else {
+        panic!("broken assumption");
+    };
+    let inputs = combiner_node_inputs
+        .keys()
+        .map(|s| s.to_owned())
+        .collect::<Vec<_>>();
+
+    // Find the cycle length of each combiner's input.
+    // Assumes that each input is cyclic with an offset of zero.
+    let pulse_times = execute_watching(&mut components, &inputs);
+    pulse_times.values().cloned().reduce(lcm).unwrap()
 }
 
 fn part_one(mut components: Input) -> u64 {
@@ -173,16 +225,49 @@ fn part_one(mut components: Input) -> u64 {
     sum_high * sum_low
 }
 
-fn execute_counting(components: &mut Input) -> (u64, u64) {
-    let mut queue = VecDeque::new();
-    let mut count_high = 0;
-    let mut count_low = 1;
+fn execute_watching(components: &mut Input, watch: &[String]) -> HashMap<String, u64> {
+    let mut values = HashMap::new();
+    let mut button_presses = 0;
 
-    queue.push_back(Pulse {
+    while values.len() != watch.len() {
+        button_presses += 1;
+        execute(components, |pulse| {
+            if watch.contains(&pulse.source)
+                && !values.contains_key(&pulse.source)
+                && pulse.voltage == Voltage::High
+            {
+                values.insert(pulse.source.to_owned(), button_presses);
+            }
+        });
+    }
+
+    values
+}
+
+fn execute_counting(components: &mut Input) -> (u64, u64) {
+    let mut count_high = 0;
+    let mut count_low = 0; // 1
+
+    execute(components, |pulse| match pulse.voltage {
+        Voltage::Low => count_low += 1,
+        Voltage::High => count_high += 1,
+    });
+    (count_high, count_low)
+}
+
+fn execute<CB>(components: &mut Input, mut callback: CB)
+where
+    CB: FnMut(&Pulse),
+{
+    let mut queue = VecDeque::new();
+
+    let start_pulse = Pulse {
         voltage: Voltage::Low,
         source: "button".to_owned(),
         destination: "broadcaster".to_owned(),
-    });
+    };
+    callback(&start_pulse);
+    queue.push_back(start_pulse);
 
     while let Some(pulse) = queue.pop_front() {
         let component = components
@@ -190,19 +275,12 @@ fn execute_counting(components: &mut Input) -> (u64, u64) {
             .unwrap_or_else(|| panic!("Component {} not found", pulse.destination));
         let generated_pulses = component.pulse(&pulse);
 
-        count_high += generated_pulses
-            .iter()
-            .filter(|p| p.voltage == Voltage::High)
-            .count() as u64;
-        count_low += generated_pulses
-            .iter()
-            .filter(|p| p.voltage == Voltage::Low)
-            .count() as u64;
+        for pulse in &generated_pulses {
+            callback(pulse);
+        }
 
         queue.append(&mut VecDeque::from(generated_pulses));
     }
-
-    (count_high, count_low)
 }
 
 fn create_outputs(input: &mut Input) {
