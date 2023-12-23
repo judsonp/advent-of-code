@@ -199,6 +199,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "aoc23_23"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "grid 0.13.0",
+ "petgraph",
+]
+
+[[package]]
 name = "aoc23_3"
 version = "0.1.0"
 dependencies = [

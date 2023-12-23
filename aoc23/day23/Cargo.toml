@@ -1,0 +1,9 @@
+[package]
+name = "aoc23_23"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.76"
+grid = "0.13.0"
+petgraph = "0.6.4"
